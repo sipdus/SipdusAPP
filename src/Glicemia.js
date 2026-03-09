@@ -1,12 +1,12 @@
 import React, { useContext } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
 import { BLEContext } from "./hooks/BLEContext";
 
 export default function GlicemiaScreen({ navigation }) {
   const { glucose } = useContext(BLEContext);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* TOPO */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -42,8 +42,16 @@ export default function GlicemiaScreen({ navigation }) {
             style={styles.tabelaImage}
           />
         </View>
+
+        <Text style={styles.subtitle}>Gráfico:</Text>
+        <View style={styles.box}>
+          <Image
+            source={require("../assets/branco2.jpg")}
+            style={styles.tabelaImage}
+          />
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 

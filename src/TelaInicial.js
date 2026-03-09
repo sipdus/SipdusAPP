@@ -6,6 +6,7 @@ const DATA = [
   { id: "1", title: "Glicemia", image: require("../assets/glicemia.png") },
   { id: "2", title: "BPM", image: require("../assets/BPM.png") },
   { id: "3", title: "Oximetria", image: require("../assets/SP02.png") },
+  { id: "4", title: "Refeições", image: require("../assets/refeicoes.png") },
 ];
 
 export default function TelaInicial({ navigation }) {
@@ -22,6 +23,8 @@ export default function TelaInicial({ navigation }) {
           navigation.navigate("BPMScreen");
         } else if (item.title === "Oximetria") {
           navigation.navigate("OximetriaScreen");
+        } else if (item.title === "Refeições") {
+          navigation.navigate("RefeicoesScreen");
         }
       }}
     >
@@ -34,7 +37,7 @@ export default function TelaInicial({ navigation }) {
     <View style={styles.container}>
       {/* TOPO BRANCO COM MENU, LOGO E NOTIFICAÇÃO */}
       <View style={styles.topBar}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Image source={require("../assets/menu.png")} style={styles.iconLarge} />
         </TouchableOpacity>
         <Text style={styles.logo}></Text>

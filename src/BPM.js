@@ -1,12 +1,12 @@
 import React, { useContext } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
 import { BLEContext } from "./hooks/BLEContext";
 
 export default function BPMScreen({ navigation }) {
   const { bpm } = useContext(BLEContext);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Image source={require("../assets/volta.png")} style={styles.backIcon} />
@@ -38,8 +38,16 @@ export default function BPMScreen({ navigation }) {
         <View style={styles.box}><Text style={styles.boxText}>Mulheres 18-65 anos: <Text style={styles.highlight}>73 a 78 BPM</Text></Text></View>
         <View style={styles.box}><Text style={styles.boxText}>Homens 18-65 anos: <Text style={styles.highlight}>70 a 76 BPM</Text></Text></View>
         <View style={styles.box}><Text style={styles.boxText}>Idosos (mais de 65 anos): <Text style={styles.highlight}>50 a 60 BPM</Text></Text></View>
+
+        <Text style={styles.subtitle}>Gráfico:</Text>
+                        <View style={styles.box}>
+                          <Image
+                            source={require("../assets/branco2.jpg")}
+                            style={styles.tabelaImage}
+                          />
+          </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -184,5 +192,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#000",
+  },
+  tabelaImage: {
+    width: "100%",
+    height: 350,
+    resizeMode: "contain",
+    alignSelf: "center",
   },
 });

@@ -1,12 +1,12 @@
 import React, { useContext } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
 import { BLEContext } from "./hooks/BLEContext";
 
 export default function OximetriaScreen({ navigation }) {
   const { spo2 } = useContext(BLEContext);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Image source={require("../assets/volta.png")} style={styles.backIcon} />
@@ -45,8 +45,16 @@ export default function OximetriaScreen({ navigation }) {
         <View style={[styles.box, { borderColor: "#E53935", borderWidth: 2 }]}>
           <Text style={styles.boxText}>Risco Gravíssimo: <Text style={styles.highlightRed}>Abaixo de 92%</Text></Text>
         </View>
+        
+         <Text style={styles.subtitle}>Gráfico:</Text>
+                <View style={styles.box}>
+                  <Image
+                    source={require("../assets/branco2.jpg")}
+                    style={styles.tabelaImage}
+                  />
+                </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -184,5 +192,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#000",
+  },
+  tabelaImage: {
+    width: "100%",
+    height: 350,
+    resizeMode: "contain",
+    alignSelf: "center",
   },
 });
