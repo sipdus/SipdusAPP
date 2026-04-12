@@ -20,7 +20,7 @@ export default function Login({ navigation }) {
       {/* Topo com fundo branco e logo */}
       <View style={styles.topContainer}>
         <Image
-          source={require("../assets/sipdus_logo.jpg")} 
+          source={require("../assets/logosipdus.jpg")} 
           style={styles.logo}
           resizeMode="contain"
         />

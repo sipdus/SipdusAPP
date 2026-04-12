@@ -85,12 +85,15 @@ export default function RefeicoesScreen({ navigation }) {
           renderItem={renderItem}
           scrollEnabled={false} // desabilita scroll do FlatList para usar ScrollView
           ListFooterComponent={
-            <View style={styles.addedButton}>
-              <Ionicons name="bag-handle-outline" size={20} color="#000" />
-              <Text style={styles.addedText}>
-                Itens adicionados: {itensAdicionados.length}
-              </Text>
-            </View>
+            <TouchableOpacity 
+                style={styles.addedButton}
+                onPress={() => navigation.navigate("ItensAdicionados")}
+            >
+            <Ionicons name="bag-handle-outline" size={20} color="#000" />
+            <Text style={styles.addedText}>
+               Itens adicionados: {itensAdicionados.length}
+            </Text>
+            </TouchableOpacity>
           }
         />
       </View>

@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from "react-native";
 import { BLEContext } from "./hooks/BLEContext";
 
@@ -12,6 +12,8 @@ const DATA = [
 export default function TelaInicial({ navigation }) {
   const { device, isConnected } = useContext(BLEContext);
 
+  const [mostrarNotificacao, setMostrarNotificacao] = useState(false);
+  const [notificacaoAtiva, setNotificacaoAtiva] = useState(true);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
@@ -35,14 +37,28 @@ export default function TelaInicial({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* TOPO BRANCO COM MENU, LOGO E NOTIFICAÇÃO */}
+      
+      {/* TOPO */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
           <Image source={require("../assets/menu.png")} style={styles.iconLarge} />
         </TouchableOpacity>
+
         <Text style={styles.logo}></Text>
-        <TouchableOpacity>
-          <Image source={require("../assets/notificacao.png")} style={styles.socialIcon} />
+
+        <TouchableOpacity onPress={() => setMostrarNotificacao(true)}>
+          <Image
+            source={
+              notificacaoAtiva
+                ? require("../assets/notificacao.png")
+                : require("../assets/notificacaodesligada.png")
+            }
+            style={
+              notificacaoAtiva
+                ? styles.socialIcon
+                : styles.socialIconDesligado
+            }
+          />
         </TouchableOpacity>
       </View>
 
@@ -53,7 +69,7 @@ export default function TelaInicial({ navigation }) {
         </Text>
       </View>
 
-      {/* STATUS DE CONEXÃO BLE CENTRALIZADO */}
+      {/* STATUS BLE */}
       <View style={styles.bleStatusContainer}>
         <Text
           style={[
@@ -65,9 +81,10 @@ export default function TelaInicial({ navigation }) {
         </Text>
       </View>
 
-      {/* ÁREA AZUL COM OS CARDS */}
+      {/* CARDS */}
       <View style={styles.blueContainer}>
         <Text style={styles.subtitleText}>Suas informações:</Text>
+
         <FlatList
           data={DATA}
           keyExtractor={(item) => item.id}
@@ -77,21 +94,66 @@ export default function TelaInicial({ navigation }) {
         />
       </View>
 
-      {/* RODAPÉ */}
+      {/* FOOTER */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem}>
+        <TouchableOpacity style={styles.footerItem}
+        onPress={() => navigation.navigate("TelaInicial")}>
           <Image source={require("../assets/inicio.png")} style={styles.footerIconLarge} />
           <Text style={styles.footerText}>Início</Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.footerItem}>
           <Image source={require("../assets/servicos.png")} style={styles.footerIcon} />
           <Text style={styles.footerText}>Serviços</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.footerItem}>
+
+        <TouchableOpacity style={styles.footerItem}
+        onPress={() => navigation.navigate("ConfiguracoesScreen")}>
           <Image source={require("../assets/configuracoes.png")} style={styles.footerIcon} />
           <Text style={styles.footerText}>Config.</Text>
         </TouchableOpacity>
       </View>
+
+      {/* POPUP DE NOTIFICAÇÃO */}
+      {mostrarNotificacao && (
+        <View style={styles.overlay}>
+          <View style={styles.popup}>
+            <Text style={styles.popupText}>
+              Gostaria de ativar / desativar suas notificações?
+            </Text>
+
+            <View style={styles.iconsContainer}>
+
+              {/* DESLIGAR */}
+              <TouchableOpacity
+                onPress={() => {
+                  setNotificacaoAtiva(false);
+                  setMostrarNotificacao(false);
+                }}
+              >
+                <Image
+                  source={require("../assets/notificacaodesligada.png")}
+                  style={styles.iconPopupDesligado}
+                />
+              </TouchableOpacity>
+
+              {/* LIGAR */}
+              <TouchableOpacity
+                onPress={() => {
+                  setNotificacaoAtiva(true);
+                  setMostrarNotificacao(false);
+                }}
+              >
+                <Image
+                  source={require("../assets/notificacao.png")}
+                  style={styles.iconPopup}
+                />
+              </TouchableOpacity>
+
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -101,6 +163,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
+
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -110,34 +173,47 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     backgroundColor: "#fff",
   },
+
   logo: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#00BCD4",
   },
+
   iconLarge: {
     width: 150,
     height: 200,
     resizeMode: "contain",
     marginTop: -120,
   },
+
   socialIcon: {
     width: 60,
     height: 60,
     resizeMode: "contain",
     marginTop: -90,
   },
+
+  socialIconDesligado: {
+    width: 80,
+    height: 80,
+    resizeMode: "contain",
+    marginTop: -112,
+    marginRight: -15,
+  },
+
   greetingWhite: {
     backgroundColor: "#fff",
     paddingVertical: 10,
     alignItems: "center",
   },
+
   helloText: {
     color: "#000",
     fontSize: 22,
     fontWeight: "bold",
   },
-  /** 🔹 Centraliza o texto do status BLE */
+
   bleStatusContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -145,17 +221,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 10,
   },
+
   bleStatusText: {
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
   },
+
   subtitleText: {
     color: "#000",
     fontSize: 20,
     marginLeft: 10,
     marginTop: 2,
   },
+
   blueContainer: {
     flex: 1,
     backgroundColor: "#00BCD4",
@@ -164,11 +243,13 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     marginTop: 10,
   },
+
   list: {
     paddingHorizontal: 20,
     paddingBottom: 120,
     marginTop: 15,
   },
+
   card: {
     backgroundColor: "#fff",
     borderRadius: 18,
@@ -182,17 +263,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
   },
+
   cardImage: {
     width: 55,
     height: 55,
     marginRight: 20,
     resizeMode: "contain",
   },
+
   cardText: {
     fontSize: 20,
     fontWeight: "600",
     color: "#000",
   },
+
   footer: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -205,24 +289,75 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
   },
+
   footerItem: {
     alignItems: "center",
   },
+
   footerIcon: {
     width: 45,
     height: 38,
     marginBottom: 4,
     resizeMode: "contain",
   },
+
   footerIconLarge: {
     width: 52,
     height: 40,
     marginBottom: 4,
     resizeMode: "contain",
   },
+
   footerText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#000000",
+  },
+
+  /* POPUP */
+
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  popup: {
+    width: "80%",
+    backgroundColor: "#00BCD4",
+    borderRadius: 15,
+    padding: 20,
+    alignItems: "center",
+  },
+
+  popupText: {
+    color: "#000",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+
+  iconsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+  },
+
+  iconPopup: {
+    width: 50,
+    height: 50,
+    resizeMode: "contain",
+  },
+
+  iconPopupDesligado: {
+    width: 70,
+    height: 70,
+    resizeMode: "contain",
+    marginTop: -20,
   },
 });
