@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from "react-native";
 import { BLEContext } from "./hooks/BLEContext";
 
@@ -10,10 +10,16 @@ const DATA = [
 ];
 
 export default function TelaInicial({ navigation }) {
-  const { device, isConnected } = useContext(BLEContext);
+  const { isConnected, startBLE } = useContext(BLEContext);
 
   const [mostrarNotificacao, setMostrarNotificacao] = useState(false);
   const [notificacaoAtiva, setNotificacaoAtiva] = useState(true);
+
+  useEffect(() => {
+    if (typeof startBLE === "function") {
+      startBLE();
+    }
+  }, []);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
@@ -79,6 +85,12 @@ export default function TelaInicial({ navigation }) {
         >
           {isConnected ? "Sensor conectado ✅" : "Nenhum sensor conectado"}
         </Text>
+
+        {!isConnected && (
+          <TouchableOpacity onPress={startBLE} style={styles.reconnectButton}>
+            <Text style={styles.reconnectText}>Tentar conectar</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* CARDS */}
@@ -124,7 +136,6 @@ export default function TelaInicial({ navigation }) {
 
             <View style={styles.iconsContainer}>
 
-              {/* DESLIGAR */}
               <TouchableOpacity
                 onPress={() => {
                   setNotificacaoAtiva(false);
@@ -137,7 +148,6 @@ export default function TelaInicial({ navigation }) {
                 />
               </TouchableOpacity>
 
-              {/* LIGAR */}
               <TouchableOpacity
                 onPress={() => {
                   setNotificacaoAtiva(true);
@@ -228,6 +238,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  reconnectButton: {
+    marginTop: 8,
+    backgroundColor: "#00BCD4",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+
+  reconnectText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+
   subtitleText: {
     color: "#000",
     fontSize: 20,
@@ -313,8 +337,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#000000",
   },
-
-  /* POPUP */
 
   overlay: {
     position: "absolute",

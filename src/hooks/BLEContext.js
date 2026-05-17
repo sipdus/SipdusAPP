@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useRef } from "react";
-import { BleManager, Device } from "react-native-ble-plx";
+import { BleManager } from "react-native-ble-plx";
 import { PermissionsAndroid, Platform, Alert } from "react-native";
 import { Buffer } from "buffer";
 
@@ -7,6 +7,7 @@ export const BLEContext = createContext({});
 
 export const BLEProvider = ({ children }) => {
   const managerRef = useRef(new BleManager());
+
   const [device, setDevice] = useState(null);
   const [bpm, setBPM] = useState(null);
   const [spo2, setSpO2] = useState(null);
@@ -17,7 +18,6 @@ export const BLEProvider = ({ children }) => {
   const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
   const DEVICE_NAME = "ESP32_MAX30102";
 
-  // Permissões BLE
   const requestPermissions = async () => {
     if (Platform.OS === "android") {
       if (Platform.Version >= 31) {
@@ -46,7 +46,6 @@ export const BLEProvider = ({ children }) => {
     return true;
   };
 
-  // Scan e conexão
   const scanAndConnect = () => {
     const manager = managerRef.current;
 
@@ -75,16 +74,17 @@ export const BLEProvider = ({ children }) => {
     });
   };
 
-  const monitorData = async (device) => {
-    device.monitorCharacteristicForService(
+  const monitorData = (connectedDevice) => {
+    connectedDevice.monitorCharacteristicForService(
       SERVICE_UUID,
       CHARACTERISTIC_UUID,
       (error, characteristic) => {
         if (error) return;
-
         if (!characteristic?.value) return;
 
-        const rawData = Buffer.from(characteristic.value, "base64").toString("utf-8").trim();
+        const rawData = Buffer.from(characteristic.value, "base64")
+          .toString("utf-8")
+          .trim();
 
         try {
           const [bpmStr, spo2Str, glucoseStr] = rawData.split(",");
@@ -100,30 +100,26 @@ export const BLEProvider = ({ children }) => {
     );
   };
 
-  useEffect(() => {
-    const init = async () => {
-      const ok = await requestPermissions();
-      if (!ok) return;
+  const startBLE = async () => {
+    const ok = await requestPermissions();
+    if (!ok) return;
 
-      const manager = managerRef.current;
-      const subscription = manager.onStateChange((state) => {
-        if (state === "PoweredOn") {
-          scanAndConnect();
-          subscription.remove();
-        }
-      }, true);
+    const manager = managerRef.current;
 
-      return () => {
+    const subscription = manager.onStateChange((state) => {
+      if (state === "PoweredOn") {
+        scanAndConnect();
         subscription.remove();
-        manager.destroy();
-      };
-    };
+      }
+    }, true);
+  };
 
-    init();
+  useEffect(() => {
+    startBLE();
   }, []);
 
   return (
-    <BLEContext.Provider value={{ device, bpm, spo2, glucose, isConnected }}>
+    <BLEContext.Provider value={{ device, bpm, spo2, glucose, isConnected, startBLE }}>
       {children}
     </BLEContext.Provider>
   );

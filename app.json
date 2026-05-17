@@ -4,56 +4,32 @@
     "slug": "sipdus",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/sipduslogo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-
     "splash": {
-      "image": "./assets/sipduslogo.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-
     "ios": {
-      "supportsTablet": true,
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
+      "supportsTablet": true
     },
-
     "android": {
       "package": "com.gigi2705.Sipdus",
       "versionCode": 1,
-
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/sipduslogo.png",
-        "backgroundColor": "#ffffff"
-      },
-
-      "icon": "./assets/sipduslogo.png", 
-      "edgeToEdgeEnabled": true,
-
       "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
         "BLUETOOTH",
         "BLUETOOTH_ADMIN",
         "BLUETOOTH_SCAN",
         "BLUETOOTH_CONNECT",
-        "BLUETOOTH_ADVERTISE",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ],
-
-      "runtimeVersion": "1.0.0"
+        "BLUETOOTH_ADVERTISE"
+      ]
     },
-
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-
     "updates": {
-      "url": "https://u.expo.dev/ce2af64a-3f68-4f35-b497-033e591be2d5"
+      "enabled": false
     },
-
     "extra": {
       "eas": {
         "projectId": "ce2af64a-3f68-4f35-b497-033e591be2d5"

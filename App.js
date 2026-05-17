@@ -13,11 +13,10 @@ import RefeicoesScreen from "./src/Refeicoes";
 import MenuLateral from "./src/MenuLateral";
 import ItensAdicionadosScreen from "./src/ItensAdicionados";
 import PrivacidadeScreen from "./src/Privacidade";
-import ConfiuracoesScreen from "./src/Configuracoes";
+import ConfiguracoesScreen from "./src/Configuracoes";
 import PerfilScreen from "./src/Perfil";
 
 import { BLEProvider } from "./src/hooks/BLEContext";
-
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -28,38 +27,37 @@ function DrawerRoutes() {
       drawerContent={(props) => <MenuLateral {...props} />}
       screenOptions={{
         headerShown: false,
-        drawerStyle: {
-          width: 280,
-          backgroundColor: "#EEEFEF",
-        },
-        sceneContainerStyle: {
-          backgroundColor: "#fff",
-        },
       }}
     >
-      <Drawer.Screen name="TelaInicial" component={TelaInicial} />
+      <Drawer.Screen name="Home" component={TelaInicial} />
     </Drawer.Navigator>
+  );
+}
+
+function AppContent() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="Cadastro" component={Cadastro} />
+        <Stack.Screen name="TelaInicial" component={DrawerRoutes} />
+        <Stack.Screen name="BPMScreen" component={BPMScreen} />
+        <Stack.Screen name="OximetriaScreen" component={OximetriaScreen} />
+        <Stack.Screen name="GlicemiaScreen" component={GlicemiaScreen} />
+        <Stack.Screen name="RefeicoesScreen" component={RefeicoesScreen} />
+        <Stack.Screen name="ItensAdicionadosScreen" component={ItensAdicionadosScreen} />
+        <Stack.Screen name="PrivacidadeScreen" component={PrivacidadeScreen} />
+        <Stack.Screen name="ConfiguracoesScreen" component={ConfiguracoesScreen} />
+        <Stack.Screen name="PerfilScreen" component={PerfilScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
 export default function App() {
   return (
     <BLEProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Login" component={Login} />
-          <Stack.Screen name="Cadastro" component={Cadastro} />
-          <Stack.Screen name="TelaInicial" component={DrawerRoutes} />
-          <Stack.Screen name="BPMScreen" component={BPMScreen} />
-          <Stack.Screen name="OximetriaScreen" component={OximetriaScreen} />
-          <Stack.Screen name="GlicemiaScreen" component={GlicemiaScreen} />
-          <Stack.Screen name="RefeicoesScreen" component={RefeicoesScreen} />
-          <Stack.Screen name="ItensAdicionadosScreen" component={ItensAdicionadosScreen} />
-          <Stack.Screen name="PrivacidadeScreen" component={PrivacidadeScreen} />
-          <Stack.Screen name="ConfiguracoesScreen" component={ConfiuracoesScreen} />
-          <Stack.Screen name="PerfilScreen" component={PerfilScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <AppContent />
     </BLEProvider>
   );
 }

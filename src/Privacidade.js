@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput } from "react-native";
 
-export default function RedefinirSenhaScreen({ navigation }) {
+export default function PrivacidadeScreen({ navigation }) {
 
   const [email, setEmail] = useState("");
 

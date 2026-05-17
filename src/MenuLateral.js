@@ -28,7 +28,7 @@ export default function MenuLateral({ navigation }) {
       <View style={styles.menuItems}>
         
         <TouchableOpacity style={styles.button}
-          onPress={() => navigation.navigate("PerfilScreen")} >
+          onPress={() => navigation.getParent().navigate("PerfilScreen")} >
           <Text style={styles.buttonText}>Meu perfil</Text>
           <Image
             source={require("../assets/user.png")}
@@ -37,7 +37,7 @@ export default function MenuLateral({ navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.button}
-          onPress={() => navigation.navigate("ConfiguracoesScreen")} >
+          onPress={() => navigation.getParent().navigate("ConfiguracoesScreen")} >
           <Text style={styles.buttonText}>Configurações</Text>
           <Image
             source={require("../assets/config.png")}

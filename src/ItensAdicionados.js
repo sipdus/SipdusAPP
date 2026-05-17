@@ -1,60 +1,97 @@
 import React from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList } from "react-native";
 
-const DATA = [
-  { id: "1", nome: "Arroz", valor: "220g" },
-  { id: "2", nome: "Feijão", valor: "100g" },
-  { id: "3", nome: "Macarrão", valor: "---" },
-  { id: "4", nome: "Batata Inglesa", valor: "20g" },
-  { id: "5", nome: "Frango", valor: "15g" },
-];
+export default function ItensAdicionadosScreen({
+  navigation,
+  route,
+}) {
 
-export default function ItensAdicionadosScreen({ navigation }) {
+  const { itens } = route.params;
 
   const renderItem = ({ item }) => (
+
     <View style={styles.itemContainer}>
-      <Text style={styles.itemNome}>{item.nome}</Text>
-      <View style={styles.linha}></View>
-      <Text style={styles.itemValor}>{item.valor}</Text>
+
+      <Text style={styles.itemNome}>
+        {item.nome}
+      </Text>
+
+      <Text style={styles.info}>
+        Energia: {item.energia} kcal
+      </Text>
+
+      <Text style={styles.info}>
+        Carboidratos: {item.carboidratos}g
+      </Text>
+
+      <Text style={styles.info}>
+        Proteínas: {item.proteinas}g
+      </Text>
+
+      <Text style={styles.info}>
+        Gorduras: {item.gorduras}g
+      </Text>
+
+      <Text style={styles.info}>
+        Fibras: {item.fibras}g
+      </Text>
+
+      <Text style={styles.info}>
+        Açúcar: {item.acucar}g
+      </Text>
+
+   
+
     </View>
   );
 
   return (
+
     <View style={styles.container}>
 
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+        >
+
           <Image
             source={require("../assets/voltar.png")}
             style={styles.voltaIcon}
           />
+
         </TouchableOpacity>
+
       </View>
 
       {/* LOGO */}
       <View style={styles.logoContainer}>
+
         <Image
           source={require("../assets/sipdus_logo.png")}
           style={styles.logo}
         />
+
       </View>
 
-      {/* CONTAINER AZUL */}
+      {/* CONTAINER */}
       <View style={styles.blueContainer}>
 
-        <Text style={styles.titulo}>Itens Adicionados</Text>
+        <Text style={styles.titulo}>
+          Itens Adicionados
+        </Text>
 
         <FlatList
-         data={DATA}
-         keyExtractor={(item) => item.id}
-         renderItem={renderItem}
-         contentContainerStyle={styles.lista}
+          data={itens}
+          keyExtractor={(item, index) =>
+            index.toString()
+          }
+          renderItem={renderItem}
+          contentContainerStyle={{
+            paddingBottom: 50
+          }}
         />
-
-        <TouchableOpacity style={styles.botaoCalcular}>
-            <Text style={styles.textoBotao}>✔ Calcular</Text>
-        </TouchableOpacity>
 
       </View>
 
@@ -72,20 +109,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 70, // desce botão voltar
+    paddingTop: 50,
+    paddingHorizontal: 5,
   },
 
   voltaIcon: {
     width: 100,
     height: 70,
     resizeMode: "contain",
-    marginLeft: -25,
   },
 
   logoContainer: {
-  alignItems: "center",
-  marginBottom: 10,
-},
+    alignItems: "center",
+    marginBottom: 10,
+  },
 
   logo: {
     width: 300,
@@ -98,59 +135,32 @@ const styles = StyleSheet.create({
     backgroundColor: "#00BCD4",
     borderTopRightRadius: 60,
     padding: 20,
-    paddingTop: 20,
   },
 
   titulo: {
     fontSize: 18,
-    marginBottom: 10,
-    color: "#000",
+    marginBottom: 20,
     alignSelf: "center",
-  },
-
-  lista: {
-    paddingBottom: 120,
+    fontWeight: "600",
   },
 
   itemContainer: {
     backgroundColor: "#fff",
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 15,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
+    marginBottom: 15,
   },
 
   itemNome: {
     fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 10,
   },
 
-  linha: {
-    flex: 1,
-    borderBottomWidth: 1,
-    borderColor: "#999",
-    marginHorizontal: 8,
-  },
-
-  itemValor: {
-    fontSize: 16,
-  },
-
-  botaoCalcular: {
-  position: "absolute",
-  bottom: 100,
-  left: "5%",
-  backgroundColor: "#D9D9D9",
-  paddingVertical: 12,
-  borderRadius: 10,
-  width: "90%",
-  alignItems: "center",
-},
-
-  textoBotao: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#777",
+  info: {
+    fontSize: 14,
+    marginBottom: 4,
   },
 
 });
+
