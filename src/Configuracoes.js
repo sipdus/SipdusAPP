@@ -1,10 +1,244 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { signOut, deleteUser } from "firebase/auth";
+import { ref, get, remove, query, orderByChild, limitToLast } from "firebase/database";
+import { auth, database } from "../firebaseConfig";
+import { Ionicons } from "@expo/vector-icons";
+import * as Notifications from "expo-notifications";
+import DateTimePicker from "@react-native-community/datetimepicker";
+
+const CIANO = "#00BCD4";
+const VERMELHO = "#E53935";
+const FUNDO = "#F7F7F8";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function ConfiguracoesScreen({ navigation }) {
 
   const [mostrarPopup, setMostrarPopup] = useState(false);
   const [tipoAcao, setTipoAcao] = useState("");
+  const [mostrarSeletorHorario, setMostrarSeletorHorario] = useState(false);
+  const [horarioLembrete, setHorarioLembrete] = useState(new Date());
+
+  const agendarLembrete = async (hora, minuto) => {
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== "granted") {
+    Alert.alert("Permissão necessária", "Ative as notificações para receber lembretes.");
+    return;
+  }
+
+  const uid = auth.currentUser?.uid;
+
+  // Cancela só o lembrete de jejum anterior (não mexe nos de medicação)
+  const snapshot = await get(ref(database, "usuarios/" + uid + "/lembrete_jejum_id"));
+  if (snapshot.exists()) {
+    await Notifications.cancelScheduledNotificationAsync(snapshot.val());
+  }
+
+  const novoId = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "Sipdus 🩸",
+      body: "Hora de medir sua glicemia em jejum!",
+    },
+    trigger: {
+      hour: hora,
+      minute: minuto,
+      repeats: true,
+    },
+  });
+
+  if (uid) {
+    await update(ref(database, "usuarios/" + uid), {
+      lembrete_jejum_id: novoId,
+    });
+  }
+
+  Alert.alert(
+    "Lembrete ativado!",
+    `Você receberá uma notificação todo dia às ${hora.toString().padStart(2, "0")}:${minuto.toString().padStart(2, "0")}.`
+  );
+};
+
+  const handleEscolherHorario = (event, dataEscolhida) => {
+    setMostrarSeletorHorario(false);
+
+    if (dataEscolhida) {
+      setHorarioLembrete(dataEscolhida);
+      agendarLembrete(dataEscolhida.getHours(), dataEscolhida.getMinutes());
+    }
+  };
+
+  const handleSolicitarDados = async () => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    try {
+      const snapshotUsuario = await get(ref(database, "usuarios/" + uid));
+      const dados = snapshotUsuario.exists() ? snapshotUsuario.val() : {};
+
+      const leiturasQuery = query(
+        ref(database, "leituras"),
+        orderByChild("timestamp"),
+        limitToLast(2000)
+      );
+      const snapshotLeituras = await get(leiturasQuery);
+      let leituraTexto = "Nenhuma leitura encontrada.";
+
+      const refeicoesQuery = query(
+        ref(database, "refeicoes"),
+        orderByChild("timestamp"),
+        limitToLast(500)
+      );
+      const snapshotRefeicoes = await get(refeicoesQuery);
+      let refeicaoTexto = "Nenhuma refeição salva.";
+
+      if (snapshotLeituras.exists()) {
+        const todasLeituras = snapshotLeituras.val();
+        const duasSemanasAtras = Date.now() - 14 * 24 * 60 * 60 * 1000;
+
+        const leiturasFiltradas = Object.values(todasLeituras).filter((leitura) => {
+          const ehDoUsuario = leitura.usuario_id === uid;
+          const dentroDoPrazo = (leitura.timestamp || 0) >= duasSemanasAtras;
+          const temValorValido = leitura.bpm > 0 || leitura.spo2 > 0 || leitura.glicemia > 0;
+          return ehDoUsuario && dentroDoPrazo && temValorValido;
+        });
+
+        if (leiturasFiltradas.length > 0) {
+          const ordenadasCrescente = leiturasFiltradas.sort(
+            (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
+          );
+
+          const porDia = {};
+          ordenadasCrescente.forEach((leitura) => {
+            const chaveDia = new Date(leitura.timestamp || 0).toLocaleDateString("pt-BR");
+
+            if (!porDia[chaveDia]) {
+              porDia[chaveDia] = leitura;
+            }
+          });
+
+          const leiturasUmaPorDia = Object.values(porDia).reverse().slice(0, 14);
+
+          leituraTexto = leiturasUmaPorDia
+            .map((l) => {
+              const partes = [];
+              if (l.bpm > 0) partes.push(`BPM: ${l.bpm}`);
+              if (l.spo2 > 0) partes.push(`SpO2: ${l.spo2}`);
+              if (l.glicemia > 0) partes.push(`Glicemia: ${l.glicemia}`);
+              return `${l.data_hora} - ${partes.join(", ")}`;
+            })
+            .join("\n");
+        } else {
+          leituraTexto = "Nenhuma leitura válida encontrada nas últimas 2 semanas.";
+        }
+      }
+
+      if (snapshotRefeicoes.exists()) {
+        const todasRefeicoes = snapshotRefeicoes.val();
+        const umaSemanaAtras = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+        const refeicoesFiltradas = Object.values(todasRefeicoes).filter((refeicao) => {
+          const ehDoUsuario = refeicao.usuario_id === uid;
+          const dentroDoPrazo = (refeicao.timestamp || 0) >= umaSemanaAtras;
+          return ehDoUsuario && dentroDoPrazo;
+        });
+
+        if (refeicoesFiltradas.length > 0) {
+          const ordenadasCrescente = refeicoesFiltradas.sort(
+            (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
+          );
+
+          refeicaoTexto = ordenadasCrescente
+            .map((r) => {
+              const t = r.totais || {};
+              return (
+                `${r.data_hora} - Energia: ${Number(t.energia || 0).toFixed(1)} kcal, ` +
+                `Carboidratos: ${Number(t.carboidratos || 0).toFixed(1)}g, ` +
+                `Proteínas: ${Number(t.proteinas || 0).toFixed(1)}g, ` +
+                `Gorduras: ${Number(t.gorduras || 0).toFixed(1)}g, ` +
+                `Fibras: ${Number(t.fibras || 0).toFixed(1)}g, ` +
+                `Açúcar: ${Number(t.acucar || 0).toFixed(1)}g`
+              );
+            })
+            .join("\n");
+        } else {
+          refeicaoTexto = "Nenhuma refeição encontrada na última semana.";
+        }
+      }
+
+      const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          service_id: "service_6o5gqai",
+          template_id: "template_agcktju",
+          user_id: "8-XqNiN070z1-SXAn",
+          template_params: {
+            nome: dados.nome || "Usuário",
+            email: dados.email || "",
+            genero: dados.genero || "Não informado",
+            data_nascimento: dados.data_nascimento || "Não informado",
+            leituras: leituraTexto,
+            refeicoes: refeicaoTexto,
+          },
+        }),
+      });
+
+      const respostaTexto = await response.text();
+
+      if (response.ok) {
+        Alert.alert("Enviado!", "Seus dados foram enviados para o seu email.");
+      } else {
+        Alert.alert("Erro ao enviar", `Status: ${response.status}\n${respostaTexto}`);
+      }
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível buscar ou enviar seus dados.");
+    }
+  };
+
+  const executarAcao = async () => {
+    setMostrarPopup(false);
+    const uid = auth.currentUser?.uid;
+
+    try {
+      if (tipoAcao === "sair") {
+        await signOut(auth);
+        navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+      }
+
+      else if (tipoAcao === "excluir") {
+        if (uid) {
+          await remove(ref(database, "usuarios/" + uid));
+        }
+        await deleteUser(auth.currentUser);
+        navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+      }
+
+      else if (tipoAcao === "dados") {
+        if (uid) {
+          await remove(ref(database, "usuarios/" + uid));
+        }
+        Alert.alert("Pronto", "Seus dados foram apagados.");
+      }
+    } catch (error) {
+      if (error.code === "auth/requires-recent-login") {
+        Alert.alert(
+          "Ação sensível",
+          "Por segurança, faça login novamente antes de excluir sua conta."
+        );
+      } else {
+        Alert.alert("Erro", error.message);
+      }
+    }
+  };
 
   const renderOption = (titulo, icon, danger = false, privacidade = false) => (
     <TouchableOpacity
@@ -12,10 +246,18 @@ export default function ConfiguracoesScreen({ navigation }) {
       activeOpacity={0.7}
       onPress={() => {
 
-         if (titulo === "Privacidade") {
-        navigation.navigate("PrivacidadeScreen");
+        if (titulo === "Gerenciar Conta") {
+          navigation.navigate("PerfilScreen");
         }
-        
+
+        if (titulo === "Privacidade") {
+          navigation.navigate("PrivacidadeScreen");
+        }
+
+        if (titulo === "Solicitar seus dados") {
+          handleSolicitarDados();
+        }
+
         if (titulo === "Excluir a conta") {
           setTipoAcao("excluir");
           setMostrarPopup(true);
@@ -58,14 +300,14 @@ export default function ConfiguracoesScreen({ navigation }) {
       {/* LOGO */}
       <View style={styles.logoContainer}>
         <Image
-          source={require("../assets/logosipdus.jpg")}
+          source={require("../assets/sipdus_logo.png")}
           style={styles.logo}
         />
       </View>
 
-      {/* CONTAINER AZUL */}
+      {/* CONTAINER */}
       <ScrollView
-        style={styles.blueContainer}
+        style={styles.contentContainer}
         contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
@@ -77,6 +319,27 @@ export default function ConfiguracoesScreen({ navigation }) {
         {renderOption("Solicitar seus dados", require("../assets/dados.png"))}
 
         {renderOption("Privacidade", require("../assets/privacidade.png"), false, true)}
+
+        {/* LEMBRETE DE JEJUM */}
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() => setMostrarSeletorHorario(true)}
+        >
+          <Text style={styles.optionText}>Lembrete de jejum</Text>
+          <View style={styles.iconBox}>
+            <Ionicons name="alarm-outline" size={26} color="#000" />
+          </View>
+        </TouchableOpacity>
+
+        {mostrarSeletorHorario && (
+          <DateTimePicker
+            value={horarioLembrete}
+            mode="time"
+            is24Hour={true}
+            display="default"
+            onChange={handleEscolherHorario}
+          />
+        )}
 
         {renderOption("Excluir a conta", require("../assets/excluirconta.png"), true)}
 
@@ -115,25 +378,11 @@ export default function ConfiguracoesScreen({ navigation }) {
 
             <View style={styles.iconsContainer}>
 
-              {/* NÃO */}
-              <TouchableOpacity onPress={() => setMostrarPopup(false)}>
+              <TouchableOpacity onPress={executarAcao}>
                 <Text style={styles.botaoTexto}>Sim</Text>
               </TouchableOpacity>
 
-              {/* SIM */}
-              <TouchableOpacity
-                onPress={() => {
-                  setMostrarPopup(false);
-
-                  if (tipoAcao === "sair") {
-                    console.log("Saiu");
-                  } else if (tipoAcao === "excluir") {
-                    console.log("Conta excluída");
-                  } else if (tipoAcao === "dados") {
-                    console.log("Dados apagados");
-                  }
-                }}
-              >
+              <TouchableOpacity onPress={() => setMostrarPopup(false)}>
                 <Text style={styles.botaoTexto}>Não</Text>
               </TouchableOpacity>
 
@@ -150,7 +399,7 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: FUNDO,
   },
 
   header: {
@@ -161,9 +410,9 @@ const styles = StyleSheet.create({
 
   voltaIcon: {
     width: 100,
-    height: 70,
+    height: 60,
     resizeMode: "contain",
-    marginLeft: -25,
+    marginLeft: 10,
   },
 
   logoContainer: {
@@ -178,10 +427,9 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
 
-  blueContainer: {
+  contentContainer: {
     flex: 1,
-    backgroundColor: "#00BCD4",
-    borderTopRightRadius: 60,
+    backgroundColor: FUNDO,
     padding: 20,
   },
 
@@ -189,6 +437,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 20,
     color: "#000",
+    fontWeight: "700",
     alignSelf: "center",
   },
 
@@ -196,12 +445,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#F2F2F2",
+    backgroundColor: "#fff",
     width: "85%",
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderRadius: 8,
     marginBottom: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
 
   optionText: {
@@ -210,11 +464,11 @@ const styles = StyleSheet.create({
   },
 
   dangerText: {
-    color: "#E53935",
+    color: VERMELHO,
   },
 
   iconBox: {
-    backgroundColor: "#2DAEC1",
+    backgroundColor: CIANO,
     padding: 6,
     borderRadius: 5,
   },
@@ -235,19 +489,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 5,
-    backgroundColor: "#E5E5E5",
+    backgroundColor: "#fff",
     width: "55%",
     paddingVertical: 12,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
 
   logoutText: {
     marginRight: 8,
     fontSize: 16,
-    color: "#E53935"
+    color: VERMELHO,
+    fontWeight: "600",
   },
-
-  /* POPUP */
 
   overlay: {
     position: "absolute",
@@ -262,10 +517,12 @@ const styles = StyleSheet.create({
 
   popup: {
     width: "80%",
-    backgroundColor: "#00BCD4",
+    backgroundColor: "#fff",
     borderRadius: 15,
     padding: 20,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#eee",
   },
 
   popupText: {
@@ -284,7 +541,7 @@ const styles = StyleSheet.create({
   botaoTexto: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#000",
+    color: CIANO,
   },
 
 });

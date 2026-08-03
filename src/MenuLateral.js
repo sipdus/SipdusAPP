@@ -1,13 +1,53 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from "react-native";
+import { auth, database } from "../firebaseConfig";
+import { ref, get } from "firebase/database";
 
 export default function MenuLateral({ navigation }) {
+
+  const [primeiroNome, setPrimeiroNome] = useState("Usuário");
+
+  useEffect(() => {
+    const carregarNome = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      try {
+        const snapshot = await get(ref(database, "usuarios/" + uid));
+        if (snapshot.exists()) {
+          const dados = snapshot.val();
+          const nomeCompleto = dados.nome || "";
+          const primeiro = nomeCompleto.trim().split(" ")[0];
+          if (primeiro) {
+            setPrimeiroNome(primeiro);
+          }
+        }
+      } catch (error) {
+        console.warn("Erro ao carregar nome do usuário:", error);
+      }
+    };
+
+    carregarNome();
+  }, []);
+
+  const irParaPerfil = () => {
+    navigation.getParent().navigate("PerfilScreen");
+  };
+
+  const irParaConfiguracoes = () => {
+    navigation.getParent().navigate("ConfiguracoesScreen");
+  };
+
+  const irParaMedicacoes = () => {
+    navigation.getParent().navigate("MedicacoesScreen");
+  };
+
   return (
     <View style={styles.container}>
 
       {/* TOPO */}
       <View style={styles.header}>
-        
+
         {/* IMAGEM DO MENU NO LUGAR DO TEXTO SIPDUS */}
         <Image
           source={require("../assets/menu.png")}
@@ -15,20 +55,15 @@ export default function MenuLateral({ navigation }) {
         />
 
         <View style={styles.userContainer}>
-          <Image
-            source={require("../assets/vatar.png")}
-            style={styles.userIcon}
-          />
-          <Text style={styles.userText}>(User)</Text>
+          <Text style={styles.userText}>{primeiroNome}</Text>
         </View>
 
       </View>
 
       {/* BOTÕES */}
       <View style={styles.menuItems}>
-        
-        <TouchableOpacity style={styles.button}
-          onPress={() => navigation.getParent().navigate("PerfilScreen")} >
+
+        <TouchableOpacity style={styles.button} onPress={irParaPerfil}>
           <Text style={styles.buttonText}>Meu perfil</Text>
           <Image
             source={require("../assets/user.png")}
@@ -36,8 +71,7 @@ export default function MenuLateral({ navigation }) {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button}
-          onPress={() => navigation.getParent().navigate("ConfiguracoesScreen")} >
+        <TouchableOpacity style={styles.button} onPress={irParaConfiguracoes}>
           <Text style={styles.buttonText}>Configurações</Text>
           <Image
             source={require("../assets/config.png")}
@@ -45,7 +79,7 @@ export default function MenuLateral({ navigation }) {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity style={styles.button} onPress={irParaMedicacoes}>
           <Text style={styles.buttonText}>Medicações</Text>
           <Image
             source={require("../assets/star.png")}
@@ -54,11 +88,6 @@ export default function MenuLateral({ navigation }) {
         </TouchableOpacity>
 
       </View>
-
-      {/* BOTÃO SAIR */}
-      <TouchableOpacity style={styles.logout}>
-        <Text style={styles.logoutText}>Sair</Text>
-      </TouchableOpacity>
 
     </View>
   );
@@ -89,15 +118,10 @@ flexDirection:"row",
 alignItems:"center"
 },
 
-userIcon:{
-width:40,
-height:40,
-marginRight:10
-},
-
 userText:{
 fontSize:18,
-fontWeight:"bold"
+fontWeight:"bold",
+color:"#00BCD4"
 },
 
 menuItems:{
@@ -122,22 +146,6 @@ icon:{
 width:24,
 height:24,
 resizeMode:"contain"
-},
-
-logout:{
-marginTop:290,
-borderWidth:1,
-borderColor:"#00BCD4",
-padding:12,
-borderRadius:6,
-alignItems:"center"
-},
-
-logoutText:{
-fontSize:16,
-fontWeight:"bold",
- color: "#E53935"
 }
 
 });
-

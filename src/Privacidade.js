@@ -1,9 +1,38 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, Alert } from "react-native";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../firebaseConfig";
+
+const CIANO = "#00BCD4";
+const FUNDO = "#F7F7F8";
 
 export default function PrivacidadeScreen({ navigation }) {
 
   const [email, setEmail] = useState("");
+
+  const handleEnviar = async () => {
+    if (!email) {
+      Alert.alert("Digite seu email primeiro!");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert(
+        "Email enviado!",
+        "Verifique sua caixa de entrada para redefinir sua senha."
+      );
+      navigation.goBack();
+    } catch (error) {
+      if (error.code === "auth/user-not-found") {
+        Alert.alert("Não existe usuário cadastrado com esse email.");
+      } else if (error.code === "auth/invalid-email") {
+        Alert.alert("Email inválido.");
+      } else {
+        Alert.alert("Erro ao enviar email", error.message);
+      }
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -11,12 +40,12 @@ export default function PrivacidadeScreen({ navigation }) {
       {/* LOGO */}
       <View style={styles.logoContainer}>
         <Image
-          source={require("../assets/logosipdus.jpg")}
+          source={require("../assets/sipdus_logo.png")}
           style={styles.logo}
         />
       </View>
 
-      {/* CONTAINER AZUL */}
+      {/* CONTAINER */}
       <View style={styles.blueContainer}>
 
         {/* VOLTAR */}
@@ -48,7 +77,7 @@ export default function PrivacidadeScreen({ navigation }) {
             onChangeText={setEmail}
           />
 
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={handleEnviar}>
             <Text style={styles.buttonText}>Enviar</Text>
           </TouchableOpacity>
 
@@ -64,10 +93,9 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: FUNDO,
   },
 
-  /* 🔥 LOGO MAIOR */
   logoContainer: {
     alignItems: "center",
     marginTop: 40,
@@ -75,17 +103,14 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    width: 260, // 🔥 aumentei
+    width: 260,
     height: 150,
     resizeMode: "contain",
   },
 
-  /* 🔥 IGUAL CONFIGURAÇÕES */
   blueContainer: {
     flex: 1,
-    backgroundColor: "#00BCD4",
-    borderTopRightRadius: 60, // 🔥 só lado direito igual config
-    borderTopLeftRadius: 0,
+    backgroundColor: FUNDO,
     padding: 20,
   },
 
@@ -104,7 +129,7 @@ const styles = StyleSheet.create({
 
   voltarText: {
     fontSize: 22,
-    color: "#000",
+    color: CIANO,
     fontWeight: "600",
     marginLeft: -10,
     marginTop: -5,
@@ -139,16 +164,18 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: "#E5E5E5",
+    backgroundColor: "#fff",
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 15,
     marginBottom: 25,
     width: "100%",
+    borderWidth: 1,
+    borderColor: "#ccc",
   },
 
   button: {
-    backgroundColor: "#E5E5E5",
+    backgroundColor: CIANO,
     paddingVertical: 10,
     borderRadius: 20,
     alignItems: "center",
@@ -157,7 +184,7 @@ const styles = StyleSheet.create({
 
   buttonText: {
     fontSize: 16,
-    color: "#000",
+    color: "#fff",
     fontWeight: "500",
   },
 

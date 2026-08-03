@@ -7,26 +7,61 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Alert,
 } from "react-native";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebaseConfig";
 
 const windowWidth = Dimensions.get("window").width;
+const FUNDO = "#F7F7F8";
 
 export default function Login({ navigation }) {
   const [Email, setEmail] = useState("");
   const [Senha, setSenha] = useState("");
 
+  const handleLogin = async () => {
+    if (!Email || !Senha) {
+      Alert.alert("Preencha email e senha!");
+      return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, Email, Senha);
+
+      if (!userCredential.user.emailVerified) {
+        Alert.alert(
+          "Email não confirmado",
+          "Verifique seu email e clique no link de confirmação antes de entrar."
+        );
+        return;
+      }
+
+      navigation.replace("TelaInicial");
+    } catch (error) {
+      if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password") {
+        Alert.alert("Email ou senha incorretos.");
+      } else if (error.code === "auth/user-not-found") {
+        Alert.alert("Usuário não encontrado.");
+      } else if (error.code === "auth/invalid-email") {
+        Alert.alert("Email inválido.");
+      } else {
+        Alert.alert("Erro ao fazer login", error.message);
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Topo com fundo branco e logo */}
+      {/* Topo com logo */}
       <View style={styles.topContainer}>
         <Image
-          source={require("../assets/logosipdus.jpg")} 
+          source={require("../assets/sipdus_logo.png")} 
           style={styles.logo}
           resizeMode="contain"
         />
       </View>
 
-      {/* Parte azul curva */}
+      {/* Parte de baixo */}
       <View style={styles.bottomContainer}>
         <Text style={styles.label}>Email:</Text>
         <TextInput
@@ -46,39 +81,15 @@ export default function Login({ navigation }) {
           style={styles.input}
         />
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("PrivacidadeScreen")}>
           <Text style={styles.forgotText}>Esqueci minha senha...</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={() => navigation.replace("TelaInicial")}>
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
 
-        <View style={styles.socialContainer}>
-          <TouchableOpacity style={styles.socialButton}>
-            <Image
-              source={require("../assets/images.png")}
-              style={styles.socialIcon}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <Image
-              source={require("../assets/facebook_logo.jpg")}
-              style={styles.socialIcon}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <Image
-              source={require("../assets/instagram_logo.jpg")}
-              style={styles.socialIcon}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        </View>
-
-         <View style={{ alignItems: "center" }}>
+         <View style={{ alignItems: "center", marginTop: 20 }}>
           <Text style={styles.registerText}>
            Não tem uma conta?{" "}
          <TouchableOpacity onPress={() => navigation.navigate("Cadastro")}>
@@ -94,10 +105,10 @@ export default function Login({ navigation }) {
 const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: "#fff",
+      backgroundColor: FUNDO,
     },
     topContainer: {
-      backgroundColor: "#fff",
+      backgroundColor: FUNDO,
       alignItems: "center",
       justifyContent: "flex-start",
       height: 200,         
@@ -113,8 +124,7 @@ const styles = StyleSheet.create({
     },
     bottomContainer: {
       flex: 1,
-      backgroundColor: "#00bcd4",
-      borderTopLeftRadius: 80,
+      backgroundColor: FUNDO,
       paddingTop: 60, 
       paddingHorizontal: 25,
     },
@@ -144,7 +154,7 @@ const styles = StyleSheet.create({
       marginTop: 10,
     },
     button: {
-      backgroundColor: "#fff",
+      backgroundColor: "#00bcd4",
       paddingVertical: 12,
       borderRadius: 25,
       alignItems: "center",
@@ -154,27 +164,9 @@ const styles = StyleSheet.create({
       marginTop: 30,
     },
     buttonText: {
-      color: "#00bcd4",
+      color: "#fff",
       fontSize: 16,
       fontWeight: "bold",
-    },
-    socialContainer: {
-      flexDirection: "row",
-      justifyContent: "center",
-      marginBottom: 25,
-      marginTop: 0,
-    },
-    socialButton: {
-      backgroundColor: "#fff",
-      borderRadius: 50,
-      padding: 10,
-      marginHorizontal: 10,
-      borderWidth: 1,
-      borderColor: "#ccc",
-    },
-    socialIcon: {
-      width: 25,
-      height: 25,
     },
     registerText: {
       color: "#000",

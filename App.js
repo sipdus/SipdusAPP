@@ -2,6 +2,8 @@ import * as React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
+import { Dimensions } from "react-native";
+import * as Notifications from "expo-notifications";
 
 import Login from "./src/Login";
 import Cadastro from "./src/Cadastro";
@@ -15,11 +17,22 @@ import ItensAdicionadosScreen from "./src/ItensAdicionados";
 import PrivacidadeScreen from "./src/Privacidade";
 import ConfiguracoesScreen from "./src/Configuracoes";
 import PerfilScreen from "./src/Perfil";
+import MedicacoesScreen from "./src/Medicacoes";
 
 import { BLEProvider } from "./src/hooks/BLEContext";
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
+
+const { width } = Dimensions.get("window");
 
 function DrawerRoutes() {
   return (
@@ -27,6 +40,9 @@ function DrawerRoutes() {
       drawerContent={(props) => <MenuLateral {...props} />}
       screenOptions={{
         headerShown: false,
+        drawerStyle: {
+          width: width * 0.5,
+        },
       }}
     >
       <Drawer.Screen name="Home" component={TelaInicial} />
@@ -49,6 +65,7 @@ function AppContent() {
         <Stack.Screen name="PrivacidadeScreen" component={PrivacidadeScreen} />
         <Stack.Screen name="ConfiguracoesScreen" component={ConfiguracoesScreen} />
         <Stack.Screen name="PerfilScreen" component={PerfilScreen} />
+        <Stack.Screen name="MedicacoesScreen" component={MedicacoesScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -2,11 +2,14 @@ import React, { createContext, useState, useEffect, useRef } from "react";
 import { BleManager } from "react-native-ble-plx";
 import { PermissionsAndroid, Platform, Alert } from "react-native";
 import { Buffer } from "buffer";
+import { auth, database } from "../../firebaseConfig";
+import { ref, push } from "firebase/database";
 
 export const BLEContext = createContext({});
 
 export const BLEProvider = ({ children }) => {
   const managerRef = useRef(new BleManager());
+  const ultimoEnvioRef = useRef(0); // controla o tempo do último envio ao Firebase
 
   const [device, setDevice] = useState(null);
   const [bpm, setBPM] = useState(null);
@@ -89,9 +92,37 @@ export const BLEProvider = ({ children }) => {
         try {
           const [bpmStr, spo2Str, glucoseStr] = rawData.split(",");
           if (bpmStr && spo2Str && glucoseStr) {
-            setBPM(parseInt(bpmStr));
-            setSpO2(parseFloat(spo2Str));
-            setGlucose(parseFloat(glucoseStr));
+            const novoBpm = parseInt(bpmStr);
+            const novoSpo2 = parseFloat(spo2Str);
+            const novaGlicemia = parseFloat(glucoseStr);
+
+            // Atualiza a tela sempre, em tempo real
+            setBPM(novoBpm);
+            setSpO2(novoSpo2);
+            setGlucose(novaGlicemia);
+
+            // Só salva no Firebase a cada 3 segundos, pra não sobrecarregar o app
+            const agora = Date.now();
+            if (agora - ultimoEnvioRef.current > 3000) {
+              ultimoEnvioRef.current = agora;
+
+              const uid = auth.currentUser?.uid;
+
+              if (uid) {
+                push(ref(database, "leituras"), {
+                  usuario_id: uid,
+                  bpm: novoBpm,
+                  spo2: novoSpo2,
+                  glicemia: novaGlicemia,
+                  timestamp: agora,
+                  data_hora: new Date().toLocaleString("pt-BR", {
+                    timeZone: "America/Sao_Paulo",
+                  }),
+                }).catch((erro) => {
+                  console.warn("Erro ao salvar no Firebase:", erro);
+                });
+              }
+            }
           }
         } catch (err) {
           console.warn("Erro ao processar:", rawData, err);

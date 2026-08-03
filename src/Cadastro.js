@@ -9,12 +9,13 @@ import {
   Image,
   Alert,
   ScrollView,
-  ImageBackground,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import CheckBox from "react-native-check-box";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { ref, set } from "firebase/database";
+import { auth, database } from "../firebaseConfig";
 
 const { width } = Dimensions.get("window");
+const FUNDO = "#F7F7F8";
 
 export default function Cadastro({ navigation }) {
   const [usuario, setUsuario] = useState("");
@@ -23,6 +24,23 @@ export default function Cadastro({ navigation }) {
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [concordaTermos, setConcordaTermos] = useState(false);
+
+  const formatarData = (texto) => {
+    let apenasNumeros = texto.replace(/\D/g, "");
+    apenasNumeros = apenasNumeros.slice(0, 8);
+
+    if (apenasNumeros.length <= 2) {
+      setDataNascimento(apenasNumeros);
+    } else if (apenasNumeros.length <= 4) {
+      setDataNascimento(
+        `${apenasNumeros.slice(0, 2)}/${apenasNumeros.slice(2)}`
+      );
+    } else {
+      setDataNascimento(
+        `${apenasNumeros.slice(0, 2)}/${apenasNumeros.slice(2, 4)}/${apenasNumeros.slice(4)}`
+      );
+    }
+  };
 
   const handleCadastro = async () => {
     if (!usuario || !email || !senha || !confirmarSenha) {
@@ -41,13 +59,33 @@ export default function Cadastro({ navigation }) {
     }
 
     try {
-      await AsyncStorage.setItem(
-        "UsuarioLogado",
-        JSON.stringify({ usuario, email, senha })
+      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+      const uid = userCredential.user.uid;
+
+      await set(ref(database, "usuarios/" + uid), {
+        nome: usuario,
+        data_nascimento: dataNascimento,
+        email: email,
+      });
+
+      await sendEmailVerification(userCredential.user);
+
+      Alert.alert(
+        "Confirme seu email",
+        "Enviamos um link de confirmação para o seu email. Confirme antes de fazer login."
       );
-      navigation.navigate("Inicio");
+
+      navigation.navigate("Login");
     } catch (error) {
-      Alert.alert("Erro ao salvar os dados.");
+      if (error.code === "auth/email-already-in-use") {
+        Alert.alert("Esse email já está cadastrado.");
+      } else if (error.code === "auth/invalid-email") {
+        Alert.alert("Email inválido.");
+      } else if (error.code === "auth/weak-password") {
+        Alert.alert("A senha deve ter no mínimo 6 caracteres.");
+      } else {
+        Alert.alert("Erro ao cadastrar", error.message);
+      }
     }
   };
 
@@ -56,12 +94,14 @@ export default function Cadastro({ navigation }) {
       <View style={styles.container}>
         {/* TOPO */}
         <View style={styles.topContainer}>
-          <ImageBackground
-            source={require("../assets/sipdus_coracao.png")}
-            style={styles.background}
-            resizeMode="cover"
-          />
-          <Text style={styles.title}>Cadastro:</Text>
+          <View style={styles.imageWrapper}>
+            <Image
+              source={require("../assets/sipdus_coracao.png")}
+              style={styles.background}
+              resizeMode="contain"
+            />
+            <Text style={styles.title}>Cadastro:</Text>
+          </View>
         </View>
 
         <View style={styles.formContainer}>
@@ -79,7 +119,8 @@ export default function Cadastro({ navigation }) {
             placeholder="DD/MM/AAAA"
             keyboardType="numeric"
             value={dataNascimento}
-            onChangeText={setDataNascimento}
+            onChangeText={formatarData}
+            maxLength={10}
           />
 
           <Text style={styles.label}>Email:</Text>
@@ -109,12 +150,11 @@ export default function Cadastro({ navigation }) {
             onChangeText={setConfirmarSenha}
           />
 
-          {/* Checkbox */}
+          {/* Checkbox simples, sem dependência externa */}
           <View style={styles.checkboxContainer}>
-            <CheckBox
-              isChecked={concordaTermos}
-              onClick={() => setConcordaTermos(!concordaTermos)}
-              checkBoxColor="#FF0000"
+            <TouchableOpacity
+              onPress={() => setConcordaTermos(!concordaTermos)}
+              style={[styles.checkboxBox, concordaTermos && styles.checkboxBoxAtivo]}
             />
             <Text style={styles.checkboxLabel}>
               Li e concordo com os termos de uso
@@ -123,7 +163,7 @@ export default function Cadastro({ navigation }) {
 
           <TouchableOpacity 
           style={styles.button} 
-          onPress={() => navigation.navigate("Login")}
+          onPress={handleCadastro}
           >
           <Text style={styles.buttonText}>Cadastrar</Text>
           </TouchableOpacity>
@@ -136,46 +176,46 @@ export default function Cadastro({ navigation }) {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
   },
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
     alignItems: "center",
   },
 
-  // TOPO BRANCO
   topContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
     width: "100%",
     paddingTop: 60,
-    paddingBottom: 1,
+    paddingBottom: 10,
     alignItems: "center",
-    borderBottomLeftRadius: 100,
-    borderBottomRightRadius: 100,
+  },
+  imageWrapper: {
+    width: 200,
+    height: 200,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
   },
   background: {
-    width: 195,
-    height: 250,
-    marginTop: -70,
-    marginRight: 100,
+    width: 200,
+    height: 200,
+    position: "absolute",
   },
   title: {
     color: "#000000", 
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "bold",
-    marginTop: -138,
-    marginLeft: 25,
+    zIndex: 10,
+    marginLeft: 60,
   },
 
-  // PARTE DE BAIXO AZUL
   formContainer: {
     flex: 1,
-    backgroundColor: "#00bcd4",
+    backgroundColor: FUNDO,
     width: "100%",
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 0,
-    paddingTop: 60,
+    paddingTop: 2,
     paddingHorizontal: 30,
     paddingBottom: 50,
   },
@@ -200,26 +240,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
+  checkboxBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: "#DC1429",
+    backgroundColor: "#fff",
+  },
+  checkboxBoxAtivo: {
+    backgroundColor: "#DC1429",
+  },
   checkboxLabel: {
     marginLeft: 10,
     fontSize: 14,
     color: "#000000",
   },
   button: {
-    borderWidth: 2,
-    borderColor: "#fff",
+    borderWidth: 0,
     borderRadius: 30,
     paddingVertical: 12,
     paddingHorizontal: 25,
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#00bcd4",
     alignSelf: "center",
     width: "100%",
   },
   buttonText: {
-    color: "#000000",
+    color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },
 });
-

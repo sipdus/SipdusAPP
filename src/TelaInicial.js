@@ -1,6 +1,9 @@
 import React, { useContext, useState, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Alert } from "react-native";
 import { BLEContext } from "./hooks/BLEContext";
+import { auth, database } from "../firebaseConfig";
+import { ref, get } from "firebase/database";
+import * as Notifications from "expo-notifications";
 
 const DATA = [
   { id: "1", title: "Glicemia", image: require("../assets/glicemia.png") },
@@ -9,16 +12,40 @@ const DATA = [
   { id: "4", title: "Refeições", image: require("../assets/refeicoes.png") },
 ];
 
+const CIANO = "#00BCD4";
+const FUNDO = "#F7F7F8";
+
 export default function TelaInicial({ navigation }) {
   const { isConnected, startBLE } = useContext(BLEContext);
 
   const [mostrarNotificacao, setMostrarNotificacao] = useState(false);
   const [notificacaoAtiva, setNotificacaoAtiva] = useState(true);
+  const [nomeUsuario, setNomeUsuario] = useState("");
 
   useEffect(() => {
     if (typeof startBLE === "function") {
       startBLE();
     }
+  }, []);
+
+  useEffect(() => {
+    const buscarNome = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      try {
+        const snapshot = await get(ref(database, "usuarios/" + uid));
+        if (snapshot.exists()) {
+          const nomeCompleto = snapshot.val().nome || "";
+          const primeiroNome = nomeCompleto.split(" ")[0];
+          setNomeUsuario(primeiroNome);
+        }
+      } catch (error) {
+        console.warn("Erro ao buscar nome do usuário:", error);
+      }
+    };
+
+    buscarNome();
   }, []);
 
   const renderItem = ({ item }) => (
@@ -47,23 +74,19 @@ export default function TelaInicial({ navigation }) {
       {/* TOPO */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <Image source={require("../assets/menu.png")} style={styles.iconLarge} />
+          <Image source={require("../assets/menu.png")} style={styles.iconMenu} />
         </TouchableOpacity>
 
         <Text style={styles.logo}></Text>
 
-        <TouchableOpacity onPress={() => setMostrarNotificacao(true)}>
+        <TouchableOpacity onPress={() => setMostrarNotificacao(true)} style={styles.notificacaoBox}>
           <Image
             source={
               notificacaoAtiva
                 ? require("../assets/notificacao.png")
                 : require("../assets/notificacaodesligada.png")
             }
-            style={
-              notificacaoAtiva
-                ? styles.socialIcon
-                : styles.socialIconDesligado
-            }
+            style={notificacaoAtiva ? styles.iconNotificacao : styles.iconNotificacaoDesligada}
           />
         </TouchableOpacity>
       </View>
@@ -71,7 +94,7 @@ export default function TelaInicial({ navigation }) {
       {/* SAUDAÇÃO */}
       <View style={styles.greetingWhite}>
         <Text style={styles.helloText}>
-          Olá, <Text style={{ fontWeight: "bold" }}>(User)</Text>
+          Olá, <Text style={{ fontWeight: "bold", color: CIANO }}>{nomeUsuario || "usuário"}</Text>
         </Text>
       </View>
 
@@ -94,7 +117,7 @@ export default function TelaInicial({ navigation }) {
       </View>
 
       {/* CARDS */}
-      <View style={styles.blueContainer}>
+      <View style={styles.contentContainer}>
         <Text style={styles.subtitleText}>Suas informações:</Text>
 
         <FlatList
@@ -110,18 +133,24 @@ export default function TelaInicial({ navigation }) {
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerItem}
         onPress={() => navigation.navigate("TelaInicial")}>
-          <Image source={require("../assets/inicio.png")} style={styles.footerIconLarge} />
+          <View style={styles.footerIconBox}>
+            <Image source={require("../assets/inicio.png")} style={styles.footerIconGrande} />
+          </View>
           <Text style={styles.footerText}>Início</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem}>
-          <Image source={require("../assets/servicos.png")} style={styles.footerIcon} />
+          <View style={styles.footerIconBox}>
+            <Image source={require("../assets/servicos.png")} style={styles.footerIcon} />
+          </View>
           <Text style={styles.footerText}>Serviços</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerItem}
         onPress={() => navigation.navigate("ConfiguracoesScreen")}>
-          <Image source={require("../assets/configuracoes.png")} style={styles.footerIcon} />
+          <View style={styles.footerIconBox}>
+            <Image source={require("../assets/configuracoes.png")} style={styles.footerIconGrande} />
+          </View>
           <Text style={styles.footerText}>Config.</Text>
         </TouchableOpacity>
       </View>
@@ -137,14 +166,20 @@ export default function TelaInicial({ navigation }) {
             <View style={styles.iconsContainer}>
 
               <TouchableOpacity
-                onPress={() => {
-                  setNotificacaoAtiva(false);
-                  setMostrarNotificacao(false);
-                }}
+                onPress={async () => {
+                  const uid = auth.currentUser?.uid;
+                  const snapshot = await get(ref(database, "usuarios/" + uid + "/lembrete_jejum_id"));
+                  if (snapshot.exists()) {
+                    await Notifications.cancelScheduledNotificationAsync(snapshot.val());
+                }
+                setNotificacaoAtiva(false);
+                setMostrarNotificacao(false);
+               Alert.alert("Notificações desativadas", "Seu lembrete de jejum foi cancelado.");
+              }}
               >
                 <Image
                   source={require("../assets/notificacaodesligada.png")}
-                  style={styles.iconPopupDesligado}
+                  style={styles.iconPopupdesligada}
                 />
               </TouchableOpacity>
 
@@ -152,6 +187,10 @@ export default function TelaInicial({ navigation }) {
                 onPress={() => {
                   setNotificacaoAtiva(true);
                   setMostrarNotificacao(false);
+                  Alert.alert(
+                    "Notificações ativadas",
+                    "Vá em Configurações para escolher o horário do lembrete."
+                  );
                 }}
               >
                 <Image
@@ -171,7 +210,7 @@ export default function TelaInicial({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
   },
 
   topBar: {
@@ -179,41 +218,46 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 50,
+    paddingTop: 55,
     paddingBottom: 10,
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
   },
 
   logo: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#00BCD4",
+    color: CIANO,
   },
 
-  iconLarge: {
-    width: 150,
-    height: 200,
+  iconMenu: {
+    width: 100,
+    height: 50,
     resizeMode: "contain",
-    marginTop: -120,
   },
 
-  socialIcon: {
-    width: 60,
-    height: 60,
-    resizeMode: "contain",
-    marginTop: -90,
+  notificacaoBox: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
-  socialIconDesligado: {
-    width: 80,
-    height: 80,
+  iconNotificacao: {
+    width: 40,
+    height: 40,
     resizeMode: "contain",
-    marginTop: -112,
-    marginRight: -15,
+  },
+
+  iconNotificacaoDesligada: {
+    width: 54,
+    height: 54,
+    resizeMode: "contain",
+    marginTop: -14,
+    marginLeft: 7,
   },
 
   greetingWhite: {
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
     paddingVertical: 10,
     alignItems: "center",
   },
@@ -227,7 +271,7 @@ const styles = StyleSheet.create({
   bleStatusContainer: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
     paddingVertical: 10,
     marginBottom: 10,
   },
@@ -240,7 +284,7 @@ const styles = StyleSheet.create({
 
   reconnectButton: {
     marginTop: 8,
-    backgroundColor: "#00BCD4",
+    backgroundColor: CIANO,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
@@ -255,15 +299,14 @@ const styles = StyleSheet.create({
   subtitleText: {
     color: "#000",
     fontSize: 20,
+    fontWeight: "600",
     marginLeft: 10,
     marginTop: 2,
   },
 
-  blueContainer: {
+  contentContainer: {
     flex: 1,
-    backgroundColor: "#00BCD4",
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 0,
+    backgroundColor: FUNDO,
     paddingTop: 20,
     marginTop: 10,
   },
@@ -283,9 +326,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 3,
     shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
 
   cardImage: {
@@ -305,10 +348,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#e0e0e0",
     position: "absolute",
     bottom: 0,
     width: "100%",
@@ -318,17 +361,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  footerIcon: {
-    width: 45,
-    height: 38,
+  footerIconBox: {
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 4,
+  },
+
+  footerIcon: {
+    width: 30,
+    height: 30,
     resizeMode: "contain",
   },
 
-  footerIconLarge: {
-    width: 52,
+  footerIconGrande: {
+    width: 40,
     height: 40,
-    marginBottom: 4,
     resizeMode: "contain",
   },
 
@@ -351,10 +399,12 @@ const styles = StyleSheet.create({
 
   popup: {
     width: "80%",
-    backgroundColor: "#00BCD4",
+    backgroundColor: "#fff",
     borderRadius: 15,
     padding: 20,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#eee",
   },
 
   popupText: {
@@ -371,15 +421,15 @@ const styles = StyleSheet.create({
   },
 
   iconPopup: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     resizeMode: "contain",
   },
 
-  iconPopupDesligado: {
-    width: 70,
-    height: 70,
+  iconPopupdesligada: {
+    width: 52,
+    height: 52,
     resizeMode: "contain",
-    marginTop: -20,
-  },
+    marginTop: -14,
+  }
 });

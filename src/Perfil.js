@@ -1,31 +1,82 @@
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from "react-native";
+import { auth, database } from "../firebaseConfig";
+import { ref, get, update } from "firebase/database";
 
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+const CIANO = "#00BCD4";
+const FUNDO = "#F7F7F8";
 
 export default function PerfilScreen({ navigation }) {
 
   const [nome, setNome] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [genero, setGenero] = useState("");
-  const [emailSenha, setEmailSenha] = useState("");
+  const [email, setEmail] = useState("");
   const [mostrarGenero, setMostrarGenero] = useState(false);
-  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [carregando, setCarregando] = useState(true);
 
-    const formatarData = (texto) => {
-  let numeros = texto.replace(/\D/g, "");
+  // Carrega os dados salvos no cadastro assim que a tela abre
+  useEffect(() => {
+    const carregarDados = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) {
+        setCarregando(false);
+        return;
+      }
 
-  if (numeros.length > 8) {
-    numeros = numeros.slice(0, 8);
-  }
+      try {
+        const snapshot = await get(ref(database, "usuarios/" + uid));
+        if (snapshot.exists()) {
+          const dados = snapshot.val();
+          setNome(dados.nome || "");
+          setDataNascimento(dados.data_nascimento || "");
+          setGenero(dados.genero || "");
+          setEmail(dados.email || "");
+        }
+      } catch (error) {
+        console.warn("Erro ao carregar dados:", error);
+      } finally {
+        setCarregando(false);
+      }
+    };
 
-  if (numeros.length >= 5) {
-    return numeros.replace(/(\d{2})(\d{2})(\d{1,4})/, "$1/$2/$3");
-  } else if (numeros.length >= 3) {
-    return numeros.replace(/(\d{2})(\d{1,2})/, "$1/$2");
-  }
+    carregarDados();
+  }, []);
 
-  return numeros;
+  const formatarData = (texto) => {
+    let numeros = texto.replace(/\D/g, "");
+
+    if (numeros.length > 8) {
+      numeros = numeros.slice(0, 8);
+    }
+
+    if (numeros.length >= 5) {
+      return numeros.replace(/(\d{2})(\d{2})(\d{1,4})/, "$1/$2/$3");
+    } else if (numeros.length >= 3) {
+      return numeros.replace(/(\d{2})(\d{1,2})/, "$1/$2");
+    }
+
+    return numeros;
+  };
+
+  const handleSalvar = async () => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      Alert.alert("Erro", "Você precisa estar logado para salvar o perfil.");
+      return;
+    }
+
+    try {
+      await update(ref(database, "usuarios/" + uid), {
+        nome,
+        data_nascimento: dataNascimento,
+        genero,
+      });
+
+      Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+    } catch (error) {
+      Alert.alert("Erro ao salvar", error.message);
+    }
   };
 
   return (
@@ -47,20 +98,8 @@ export default function PerfilScreen({ navigation }) {
         <Text style={styles.logo}>Perfil:</Text>
       </View>
 
-      {/* Container azul */}
+      {/* Container */}
       <View style={styles.contentContainer}>
-
-        {/* Foto de perfil */}
-        <View style={styles.profileContainer}>
-          <Image
-            source={require("../assets/avatar.jpg")}
-            style={styles.avatar}
-          />
-
-          <TouchableOpacity style={styles.cameraButton}>
-            <Ionicons name="camera" size={22} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
 
         {/* Nome */}
         <View style={styles.inputContainer}>
@@ -98,50 +137,55 @@ export default function PerfilScreen({ navigation }) {
 
         {mostrarGenero && (
           <View style={styles.opcoesGenero}>
-            <TouchableOpacity onPress={() => {setGenero("Feminino"); setMostrarGenero(false);}}>
+            <TouchableOpacity
+              style={styles.opcaoComLinha}
+              onPress={() => {
+                setGenero("Feminino");
+                setMostrarGenero(false);
+              }}
+            >
               <Text style={styles.opcaoTexto}>Feminino</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => {setGenero("Masculino"); setMostrarGenero(false);}}>
+            <TouchableOpacity
+              style={styles.opcaoComLinha}
+              onPress={() => {
+                setGenero("Masculino");
+                setMostrarGenero(false);
+              }}
+            >
               <Text style={styles.opcaoTexto}>Masculino</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => {setGenero("Prefiro não informar"); setMostrarGenero(false);}}>
+            <TouchableOpacity
+              onPress={() => {
+                setGenero("Prefiro não informar");
+                setMostrarGenero(false);
+              }}
+            >
               <Text style={styles.opcaoTexto}>Prefiro não informar</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Email */}
+        {/* Email (só exibição, não editável) */}
         <View style={styles.inputContainer}>
           <TextInput
             placeholder="Email cadastrado"
             style={styles.input}
-            value={emailSenha}
-            onChangeText={setEmailSenha}
+            value={email}
+            editable={false}
           />
           <Image source={require("../assets/chave.png")} style={styles.icon}/>
         </View>
 
-        {/* Senha com olho */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            placeholder="Senha"
-            style={styles.input}
-            secureTextEntry={!mostrarSenha}
-          />
-
-          <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
-            <Ionicons
-              name={mostrarSenha ? "eye-off" : "eye"}
-              size={22}
-              color="#000000"
-            />
-          </TouchableOpacity>
-        </View>
+        {/* Link de esqueci a senha */}
+        <TouchableOpacity onPress={() => navigation.navigate && navigation.navigate("PrivacidadeScreen")}>
+          <Text style={styles.forgotText}>Esqueci minha senha...</Text>
+        </TouchableOpacity>
 
         {/* Botão salvar */}
-        <TouchableOpacity style={styles.botaoSalvar}>
+        <TouchableOpacity style={styles.botaoSalvar} onPress={handleSalvar}>
           <Text style={styles.textoSalvar}>Salvar</Text>
         </TouchableOpacity>
 
@@ -155,7 +199,7 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
   },
 
   topBar: {
@@ -164,17 +208,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingTop: 50,
     paddingBottom: 10,
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
   },
 
   backIcon: {
-    width: 160,
-    height: 70,
+    width: 115,
+    height: 60,
     resizeMode: "contain",
+    marginLeft: 10,
   },
 
   greetingWhite: {
-    backgroundColor: "#fff",
+    backgroundColor: FUNDO,
     alignItems: "center",
     paddingVertical: 5,
     marginBottom: 10,
@@ -183,39 +228,16 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 22,
     color: "#000000",
+    fontWeight: "bold",
   },
 
   contentContainer: {
     flex: 1,
-    backgroundColor: "#00BCD4",
-    borderTopLeftRadius: 60,
-    borderTopRightRadius: 0,
+    backgroundColor: FUNDO,
     alignItems: "center",
     paddingTop: 30,
     paddingBottom: 50,
     marginTop: 10
-  },
-
-  profileContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 35,
-  },
-
-  avatar: {
-    width: 160,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#fff",
-  },
-
-  cameraButton: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    backgroundColor: "#E53935",
-    padding: 10,
-    borderRadius: 25,
   },
 
   inputContainer: {
@@ -227,6 +249,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginVertical: 10,
     height: 48,
+    borderWidth: 1,
+    borderColor: "#ccc",
   },
 
   input: {
@@ -245,30 +269,44 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     width: "85%",
     borderRadius: 20,
-    paddingVertical: 10,
     marginTop: -5,
+    overflow: "hidden",
+  },
+
+  opcaoComLinha: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
   },
 
   opcaoTexto: {
-    paddingVertical: 8,
+    paddingVertical: 12,
     textAlign: "center",
     fontSize: 14,
   },
 
+  forgotText: {
+    color: "#000",
+    marginTop: -2,
+    marginBottom: 20,
+    textAlign: "right",
+    fontSize: 13,
+    textDecorationLine: "underline",
+    marginLeft: 180,
+  },
+
   botaoSalvar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: CIANO,
     width: "90%",
     paddingVertical: 15,
     borderRadius: 30,
-    marginTop: 30,
+    marginTop: 20,
     alignItems: "center",
   },
 
   textoSalvar: {
-    color: "#E53935",
+    color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
   },
 
 });
-
