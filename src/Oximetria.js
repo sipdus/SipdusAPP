@@ -4,6 +4,7 @@ import { LineChart } from "react-native-chart-kit";
 import { BLEContext } from "./hooks/BLEContext";
 import { auth, database } from "../firebaseConfig";
 import { ref, get, query, orderByChild, limitToLast } from "firebase/database";
+import BotaoSanguezinho from "./components/BotaoSanguezinho";
 
 const CIANO = "#00BCD4";
 const VERMELHO = "#E53935";
@@ -116,6 +117,7 @@ export default function OximetriaScreen({ navigation }) {
   }, [navigation]);
 
   return (
+  <View style={{ flex: 1 }}>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -162,6 +164,8 @@ export default function OximetriaScreen({ navigation }) {
         </View>
       </View>
     </ScrollView>
+    <BotaoSanguezinho />
+  </View>
   );
 }
 

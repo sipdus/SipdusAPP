@@ -4,6 +4,7 @@ import { BLEContext } from "./hooks/BLEContext";
 import { auth, database } from "../firebaseConfig";
 import { ref, get } from "firebase/database";
 import * as Notifications from "expo-notifications";
+import BotaoSanguezinho from "./components/BotaoSanguezinho";
 
 const DATA = [
   { id: "1", title: "Glicemia", image: require("../assets/glicemia.png") },
@@ -69,6 +70,7 @@ export default function TelaInicial({ navigation }) {
   );
 
   return (
+   <View style={{ flex: 1 }}>
     <View style={styles.container}>
       
       {/* TOPO */}
@@ -204,6 +206,8 @@ export default function TelaInicial({ navigation }) {
         </View>
       )}
     </View>
+   <BotaoSanguezinho />
+  </View>
   );
 }
 

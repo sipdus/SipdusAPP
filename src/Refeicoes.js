@@ -13,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { auth, database } from "../firebaseConfig";
 import { ref, get } from "firebase/database";
+import BotaoSanguezinho from "./components/BotaoSanguezinho";
 
 const CIANO = "#00BCD4";
 const VERMELHO = "#E53935";
@@ -116,6 +117,7 @@ export default function RefeicoesScreen({ navigation }) {
   );
 
   return (
+   <View style={{ flex: 1 }}>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 
       <View style={styles.header}>
@@ -175,8 +177,9 @@ export default function RefeicoesScreen({ navigation }) {
         </TouchableOpacity>
 
       </View>
-
     </ScrollView>
+   <BotaoSanguezinho />
+  </View>
   );
 }
 

@@ -4,15 +4,18 @@
     "slug": "sipdus",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/splash.jpg",
+    "icon": "./assets/splash-icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.jpg",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "O Sipdus precisa do microfone para o assistente de voz."
+      }
     },
     "android": {
       "package": "com.gigi2705.Sipdus",
@@ -24,12 +27,18 @@
         "BLUETOOTH_ADMIN",
         "BLUETOOTH_SCAN",
         "BLUETOOTH_CONNECT",
-        "BLUETOOTH_ADVERTISE"
+        "BLUETOOTH_ADVERTISE",
+        "RECORD_AUDIO"
       ]
     },
-    "updates": {
-      "enabled": false
-    },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "O Sipdus precisa do microfone para o assistente de voz."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "ce2af64a-3f68-4f35-b497-033e591be2d5"

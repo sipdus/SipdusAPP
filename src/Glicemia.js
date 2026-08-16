@@ -4,6 +4,7 @@ import { LineChart } from "react-native-chart-kit";
 import { BLEContext } from "./hooks/BLEContext";
 import { auth, database } from "../firebaseConfig";
 import { ref, get, query, orderByChild, limitToLast } from "firebase/database";
+import BotaoSanguezinho from "./components/BotaoSanguezinho";
 
 const CIANO = "#00BCD4";
 const VERMELHO = "#E53935";
@@ -116,6 +117,7 @@ export default function GlicemiaScreen({ navigation }) {
   }, [navigation]);
 
   return (
+  <View style={{ flex: 1 }}>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* TOPO */}
       <View style={styles.topBar}>
@@ -159,6 +161,8 @@ export default function GlicemiaScreen({ navigation }) {
         </View>
       </View>
     </ScrollView>
+    <BotaoSanguezinho />
+  </View>
   );
 }
 
