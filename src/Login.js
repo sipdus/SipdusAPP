@@ -55,7 +55,7 @@ export default function Login({ navigation }) {
       {/* Topo com logo */}
       <View style={styles.topContainer}>
         <Image
-          source={require("../assets/sipdus_logo.png")} 
+          source={require("../assets/sipdus_logo.png")}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -86,16 +86,25 @@ export default function Login({ navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
+          <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
 
-         <View style={{ alignItems: "center", marginTop: 20 }}>
+        <View style={{ alignItems: "center", marginTop: 20 }}>
           <Text style={styles.registerText}>
-           Não tem uma conta?{" "}
-         <TouchableOpacity onPress={() => navigation.navigate("Cadastro")}>
-         <Text style={styles.registerLink}>Cadastre-se</Text>
-         </TouchableOpacity>
+            Não tem uma conta?{" "}
+            <Text
+              style={styles.registerLink}
+              onPress={() => navigation.navigate("Cadastro")}
+            >
+              Cadastre-se
+            </Text>
           </Text>
+
+          {/* Link do médico */}
+          <View style={styles.divisor} />
+          <TouchableOpacity onPress={() => navigation.navigate("LoginMedico")}>
+            <Text style={styles.linkMedico}>É médico? Acesse aqui</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -103,79 +112,88 @@ export default function Login({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: FUNDO,
-    },
-    topContainer: {
-      backgroundColor: FUNDO,
-      alignItems: "center",
-      justifyContent: "flex-start",
-      height: 200,         
-      paddingBottom: 30, 
-    },
-    logo: {
-      width: 275,
-      height: 3000,
-      resizeMode: "contain",
-      marginTop: -1380,
-      alignItems: "center",
-      marginLeft: 20,
-    },
-    bottomContainer: {
-      flex: 1,
-      backgroundColor: FUNDO,
-      paddingTop: 60, 
-      paddingHorizontal: 25,
-    },
-    label: {
-      color: "#000",
-      fontSize: 16,
-      marginBottom: 5,
-      marginTop: 15,
-      fontWeight: "500",
-    },
-    input: {
-      backgroundColor: "#fff",
-      borderRadius: 25,
-      padding: 12,
-      fontSize: 15,
-      paddingHorizontal: 20,
-    },
-    forgotText: {
-      color: "#000",
-      marginTop: 10,
-      marginBottom: 20,
-      textAlign: "right",
-      fontSize: 13,
-      textDecorationLine: "underline",
-    },
-    registerLink: {
-      marginTop: 10,
-    },
-    button: {
-      backgroundColor: "#00bcd4",
-      paddingVertical: 12,
-      borderRadius: 25,
-      alignItems: "center",
-      marginBottom: 30,
-      width: 280, 
-      alignSelf: "center",
-      marginTop: 30,
-    },
-    buttonText: {
-      color: "#fff",
-      fontSize: 16,
-      fontWeight: "bold",
-    },
-    registerText: {
-      color: "#000",
-      textAlign: "center",
-      fontSize: 14,
-      marginTop: 10,
-    },
-    registerLink: {
-      fontWeight: "bold",
-      textDecorationLine: "underline",
-    },
+  container: {
+    flex: 1,
+    backgroundColor: FUNDO,
+  },
+  topContainer: {
+    backgroundColor: FUNDO,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    height: 200,
+    paddingBottom: 30,
+  },
+  logo: {
+    width: 275,
+    height: 3000,
+    resizeMode: "contain",
+    marginTop: -1380,
+    alignItems: "center",
+    marginLeft: 20,
+  },
+  bottomContainer: {
+    flex: 1,
+    backgroundColor: FUNDO,
+    paddingTop: 60,
+    paddingHorizontal: 25,
+  },
+  label: {
+    color: "#000",
+    fontSize: 16,
+    marginBottom: 5,
+    marginTop: 15,
+    fontWeight: "500",
+  },
+  input: {
+    backgroundColor: "#fff",
+    borderRadius: 25,
+    padding: 12,
+    fontSize: 15,
+    paddingHorizontal: 20,
+  },
+  forgotText: {
+    color: "#000",
+    marginTop: 10,
+    marginBottom: 20,
+    textAlign: "right",
+    fontSize: 13,
+    textDecorationLine: "underline",
+  },
+  button: {
+    backgroundColor: "#00bcd4",
+    paddingVertical: 12,
+    borderRadius: 25,
+    alignItems: "center",
+    marginBottom: 30,
+    width: 280,
+    alignSelf: "center",
+    marginTop: 30,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  registerText: {
+    color: "#000",
+    textAlign: "center",
+    fontSize: 14,
+    marginTop: 10,
+  },
+  registerLink: {
+    fontWeight: "bold",
+    textDecorationLine: "underline",
+  },
+  divisor: {
+    height: 1,
+    backgroundColor: "#ddd",
+    width: "80%",
+    marginVertical: 18,
+  },
+  linkMedico: {
+    color: "#000",
+    fontWeight: "bold",
+    fontSize: 14,
+    textDecorationLine: "underline",
+  },
 });

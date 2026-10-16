@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Alert } from "react-native";
-import { BLEContext } from "./hooks/BLEContext";
+import { WebSocketContext } from "./hooks/WebSocketContext";
 import { auth, database } from "../firebaseConfig";
 import { ref, get } from "firebase/database";
 import * as Notifications from "expo-notifications";
@@ -17,17 +17,11 @@ const CIANO = "#00BCD4";
 const FUNDO = "#F7F7F8";
 
 export default function TelaInicial({ navigation }) {
-  const { isConnected, startBLE } = useContext(BLEContext);
+  const { isConnected } = useContext(WebSocketContext);
 
   const [mostrarNotificacao, setMostrarNotificacao] = useState(false);
   const [notificacaoAtiva, setNotificacaoAtiva] = useState(true);
   const [nomeUsuario, setNomeUsuario] = useState("");
-
-  useEffect(() => {
-    if (typeof startBLE === "function") {
-      startBLE();
-    }
-  }, []);
 
   useEffect(() => {
     const buscarNome = async () => {
@@ -100,7 +94,7 @@ export default function TelaInicial({ navigation }) {
         </Text>
       </View>
 
-      {/* STATUS BLE */}
+      {/* STATUS DO SENSOR */}
       <View style={styles.bleStatusContainer}>
         <Text
           style={[
@@ -110,12 +104,6 @@ export default function TelaInicial({ navigation }) {
         >
           {isConnected ? "Sensor conectado ✅" : "Nenhum sensor conectado"}
         </Text>
-
-        {!isConnected && (
-          <TouchableOpacity onPress={startBLE} style={styles.reconnectButton}>
-            <Text style={styles.reconnectText}>Tentar conectar</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* CARDS */}

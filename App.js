@@ -6,7 +6,12 @@ import { Dimensions } from "react-native";
 import * as Notifications from "expo-notifications";
 
 import Login from "./src/Login";
+import LoginMedico from "./src/LoginMedico";
 import Cadastro from "./src/Cadastro";
+import CadastroMedico from "./src/CadastroMedico";
+import RecuperarSenhaMedico from "./src/RecuperarSenhaMedico";
+import TelaMedico from "./src/TelaMedico";
+import TelaPaciente from "./src/TelaPaciente";
 import TelaInicial from "./src/TelaInicial";
 import BPMScreen from "./src/BPM";
 import OximetriaScreen from "./src/Oximetria";
@@ -19,7 +24,7 @@ import ConfiguracoesScreen from "./src/Configuracoes";
 import PerfilScreen from "./src/Perfil";
 import MedicacoesScreen from "./src/Medicacoes";
 
-import { BLEProvider } from "./src/hooks/BLEContext";
+import { WebSocketProvider } from "./src/hooks/WebSocketContext";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -55,7 +60,12 @@ function AppContent() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="LoginMedico" component={LoginMedico} />
         <Stack.Screen name="Cadastro" component={Cadastro} />
+        <Stack.Screen name="CadastroMedico" component={CadastroMedico} />
+        <Stack.Screen name="RecuperarSenhaMedico" component={RecuperarSenhaMedico} />
+        <Stack.Screen name="TelaMedico" component={TelaMedico} />
+        <Stack.Screen name="TelaPaciente" component={TelaPaciente} />
         <Stack.Screen name="TelaInicial" component={DrawerRoutes} />
         <Stack.Screen name="BPMScreen" component={BPMScreen} />
         <Stack.Screen name="OximetriaScreen" component={OximetriaScreen} />
@@ -73,8 +83,8 @@ function AppContent() {
 
 export default function App() {
   return (
-    <BLEProvider>
+    <WebSocketProvider>
       <AppContent />
-    </BLEProvider>
+    </WebSocketProvider>
   );
 }

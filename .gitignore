@@ -20,3 +20,5 @@ node_modules/
 
 # Android cache
 android/.gradle/
+
+src/config/gemini.js

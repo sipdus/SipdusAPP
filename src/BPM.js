@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions } from "react-native";
 import { LineChart } from "react-native-chart-kit";
-import { BLEContext } from "./hooks/BLEContext";
+import { WebSocketContext } from "./hooks/WebSocketContext";
 import { auth, database } from "../firebaseConfig";
 import { ref, get, query, orderByChild, limitToLast } from "firebase/database";
 import BotaoSanguezinho from "./components/BotaoSanguezinho";
@@ -52,7 +52,7 @@ const GraficoBPM = React.memo(function GraficoBPM({ historico, carregando }) {
 });
 
 export default function BPMScreen({ navigation }) {
-  const { bpm } = useContext(BLEContext);
+  const { bpm } = useContext(WebSocketContext);
   const [nomeUsuario, setNomeUsuario] = useState("");
   const [historico, setHistorico] = useState([]);
   const [carregandoHistorico, setCarregandoHistorico] = useState(true);

@@ -14,12 +14,18 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "O Sipdus precisa do microfone para o assistente de voz."
+        "NSMicrophoneUsageDescription": "O Sipdus precisa do microfone para o assistente de voz.",
+        "NSBluetoothAlwaysUsageDescription": "O Sipdus precisa do Bluetooth para conectar no sensor.",
+        "NSBluetoothPeripheralUsageDescription": "O Sipdus precisa do Bluetooth para conectar no sensor.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
       "package": "com.gigi2705.Sipdus",
       "versionCode": 1,
+      "usesCleartextTraffic": true,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -36,6 +42,15 @@
         "expo-av",
         {
           "microphonePermission": "O Sipdus precisa do microfone para o assistente de voz."
+        }
+      ],
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "modes": ["peripheral", "central"],
+          "bluetoothAlwaysPermission": "O Sipdus precisa do Bluetooth para conectar no sensor.",
+          "neverForLocation": false
         }
       ]
     ],

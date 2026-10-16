@@ -1,11 +1,11 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import {
   View, TouchableOpacity, Image, StyleSheet, Modal, Text,
-  TextInput, ScrollView,
+  TextInput, ScrollView, PanResponder, Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BLEContext } from '../hooks/BLEContext';
-import { falar, processarComando, configurarVoz, COMANDOS_RAPIDOS } from '../services/assistenteVoz';
+import { WebSocketContext } from '../hooks/WebSocketContext';
+import { falar, processarComIA, configurarVoz, COMANDOS_RAPIDOS } from '../services/assistenteVoz';
 import ReconhecimentoVoz from './ReconhecimentoVoz';
 
 const CIANO = "#00BCD4";
@@ -19,7 +19,25 @@ export default function BotaoSanguezinho() {
   const [ultimaResposta, setUltimaResposta] = useState('');
   const [historico, setHistorico] = useState([]);
 
-  const { bpm, spo2, glucose, isConnected } = useContext(BLEContext);
+  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
+      },
+      onPanResponderMove: Animated.event(
+        [null, { dx: pan.x, dy: pan.y }],
+        { useNativeDriver: false }
+      ),
+      onPanResponderRelease: () => {
+        pan.extractOffset();
+      },
+    })
+  ).current;
+
+  const { bpm, spo2, glucose, isConnected } = useContext(WebSocketContext);
 
   const dadosReais = {
     glicose: glucose ?? 0,
@@ -47,18 +65,30 @@ export default function BotaoSanguezinho() {
   };
 
   const processarTextoRecebido = async (texto) => {
-    const resposta = processarComando(texto, dadosReais, classificarGlicose);
-    setUltimaResposta(resposta);
-    setHistorico(prev => [
-      { tipo: 'usuario', texto: texto, hora: new Date().toLocaleTimeString() },
-      { tipo: 'sangue', texto: resposta, hora: new Date().toLocaleTimeString() },
-      ...prev
-    ].slice(0, 20));
+    console.log('Recebi:', texto);
 
-    setTextoComando('');
-    setFalando(true);
-    await falar(resposta);
-    setFalando(false);
+    try {
+      setUltimaResposta('Pensando...');
+
+      const resposta = await processarComIA(texto, dadosReais, classificarGlicose);
+      console.log('✅ Resposta:', resposta);
+
+      setUltimaResposta(resposta);
+      setHistorico(prev => [
+        { tipo: 'usuario', texto: texto, hora: new Date().toLocaleTimeString() },
+        { tipo: 'sangue', texto: resposta, hora: new Date().toLocaleTimeString() },
+        ...prev
+      ].slice(0, 20));
+
+      setTextoComando('');
+      setFalando(true);
+      await falar(resposta);
+      setFalando(false);
+    } catch (erro) {
+      console.error('❌ ERRO:', erro);
+      setUltimaResposta('Erro: ' + (erro.message || 'erro desconhecido'));
+      setFalando(false);
+    }
   };
 
   const enviarComando = async () => {
@@ -67,26 +97,32 @@ export default function BotaoSanguezinho() {
   };
 
   const executarRapido = async (comando) => {
-    const resposta = processarComando(comando, dadosReais, classificarGlicose);
-    setUltimaResposta(resposta);
-    setHistorico(prev => [
-      { tipo: 'usuario', texto: comando, hora: new Date().toLocaleTimeString() },
-      { tipo: 'sangue', texto: resposta, hora: new Date().toLocaleTimeString() },
-      ...prev
-    ].slice(0, 20));
-
-    setFalando(true);
-    await falar(resposta);
-    setFalando(false);
+    await processarTextoRecebido(comando);
   };
-
-  const classificacao = classificarGlicose(dadosReais.glicose);
 
   return (
     <>
-      <TouchableOpacity style={styles.botaoFlutuante} onPress={abrirAssistente} activeOpacity={0.8}>
-        <Image source={require("../../assets/sanguezinho.png")} style={styles.imagemBotao} resizeMode="contain" />
-      </TouchableOpacity>
+      <Animated.View
+        style={[
+          styles.botaoFlutuante,
+          {
+            transform: [{ translateX: pan.x }, { translateY: pan.y }],
+          },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <TouchableOpacity
+          onPress={abrirAssistente}
+          activeOpacity={0.8}
+          style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}
+        >
+          <Image
+            source={require("../../assets/sanguezinho.png")}
+            style={styles.imagemBotao}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </Animated.View>
 
       <Modal visible={modalVisivel} animationType="slide" transparent={false} onRequestClose={() => setModalVisivel(false)}>
         <View style={styles.modalContainer}>
@@ -94,7 +130,7 @@ export default function BotaoSanguezinho() {
             <TouchableOpacity onPress={() => setModalVisivel(false)}>
               <Ionicons name="close" size={28} color="#FFF" />
             </TouchableOpacity>
-            <Text style={styles.modalTitulo}>🩸 Sip {isConnected ? '✅' : '⚠️'}</Text>
+            <Text style={styles.modalTitulo}>Sip</Text>
             <View style={{ width: 28 }} />
           </View>
 
@@ -105,24 +141,23 @@ export default function BotaoSanguezinho() {
 
             {!isConnected && (
               <View style={styles.desconectadoBox}>
-                <Text style={styles.desconectadoTexto}>⚠️ Sensor desconectado - mostrando dados simulados</Text>
+                <Text style={styles.desconectadoTexto}>Sensor desconectado</Text>
               </View>
             )}
 
             <View style={styles.cardsRow}>
               <View style={styles.dataCard}>
-                <Text style={styles.cardIcon}>🩸</Text>
+                <Ionicons name="water" size={24} color={CIANO} style={{ marginBottom: 4 }} />
                 <Text style={styles.cardValue}>{dadosReais.glicose}</Text>
                 <Text style={styles.cardUnit}>mg/dL</Text>
-                <Text style={[styles.cardStatus, { color: classificacao.cor }]}>{classificacao.nivel}</Text>
               </View>
               <View style={styles.dataCard}>
-                <Text style={styles.cardIcon}>💨</Text>
+                <Text style={styles.cardIconSpO2}>SpO2</Text>
                 <Text style={styles.cardValue}>{dadosReais.oximetria}</Text>
-                <Text style={styles.cardUnit}>% SpO2</Text>
+                <Text style={styles.cardUnit}>%</Text>
               </View>
               <View style={styles.dataCard}>
-                <Text style={styles.cardIcon}>❤️</Text>
+                <Ionicons name="heart" size={24} color={CIANO} style={{ marginBottom: 4 }} />
                 <Text style={styles.cardValue}>{dadosReais.batimentos}</Text>
                 <Text style={styles.cardUnit}>bpm</Text>
               </View>
@@ -173,14 +208,13 @@ export default function BotaoSanguezinho() {
 
             {ultimaResposta ? (
               <View style={styles.respostaBox}>
-                <Text style={styles.respostaTitulo}>🩸 Sip:</Text>
+                <Text style={styles.respostaTitulo}>Sip:</Text>
                 <Text style={styles.respostaTexto}>{ultimaResposta}</Text>
               </View>
             ) : null}
 
             <View style={styles.avisoBox}>
-              <Ionicons name="flask-outline" size={14} color="#E67E22" />
-              <Text style={styles.avisoText}>Dispositivo em fase de testes. {isConnected ? 'Dados do sensor.' : 'Dados simulados.'}</Text>
+              <Text style={styles.avisoText}>Dispositivo em fase de testes. {isConnected ? 'Dados do sensor.' : 'Sem dados.'}</Text>
             </View>
 
             {historico.length > 0 && (
@@ -189,7 +223,7 @@ export default function BotaoSanguezinho() {
                 {historico.map((item, index) => (
                   <View key={index} style={[styles.historicoItem, item.tipo === 'usuario' ? styles.historicoUsuario : styles.historicoSangue]}>
                     <Text style={styles.historicoHora}>{item.hora}</Text>
-                    <Text style={styles.historicoTexto}>{item.tipo === 'usuario' ? '🎤 ' : '🩸 '}{item.texto}</Text>
+                    <Text style={styles.historicoTexto}>{item.tipo === 'usuario' ? 'Você: ' : 'Sip: '}{item.texto}</Text>
                   </View>
                 ))}
               </View>
@@ -233,6 +267,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', flex: 1, elevation: 3,
   },
   cardIcon: { fontSize: 22 },
+  cardIconSpO2: { fontSize: 16, fontWeight: 'bold', color: CIANO, marginBottom: 8 },
   cardValue: { fontSize: 24, fontWeight: 'bold', color: '#2c3e50' },
   cardUnit: { fontSize: 10, color: '#7f8c8d' },
   cardStatus: { fontSize: 10, fontWeight: 'bold', marginTop: 4 },
@@ -270,10 +305,10 @@ const styles = StyleSheet.create({
   respostaTitulo: { fontWeight: 'bold', fontSize: 14, marginBottom: 4, color: '#2c3e50' },
   respostaTexto: { fontSize: 14, color: '#2c3e50', lineHeight: 20 },
   avisoBox: {
-    flexDirection: 'row', backgroundColor: '#FEF9E7', padding: 8,
+    backgroundColor: '#FEF9E7', padding: 8,
     borderRadius: 6, alignItems: 'center', marginBottom: 15,
   },
-  avisoText: { flex: 1, fontSize: 10, color: '#E67E22', marginLeft: 6 },
+  avisoText: { fontSize: 10, color: '#E67E22', textAlign: 'center' },
   historicoContainer: { marginBottom: 30 },
   historicoItem: { padding: 8, borderRadius: 6, marginBottom: 4 },
   historicoUsuario: { backgroundColor: '#E3F2FD', borderLeftWidth: 3, borderLeftColor: CIANO },

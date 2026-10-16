@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { ref, set } from "firebase/database";
+import { ref, set, onValue } from "firebase/database";
 import { auth, database } from "../firebaseConfig";
 
 const { width } = Dimensions.get("window");
@@ -24,6 +24,18 @@ export default function Cadastro({ navigation }) {
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [concordaTermos, setConcordaTermos] = useState(false);
+  const [medicoId, setMedicoId] = useState("");
+  const [medicosAprovados, setMedicosAprovados] = useState({});
+  const [mostrarMedicos, setMostrarMedicos] = useState(false);
+
+  // Carrega lista de médicos aprovados
+  useEffect(() => {
+    const medicosRef = ref(database, "medicos_publicos");
+    const cancelar = onValue(medicosRef, (snap) => {
+      setMedicosAprovados(snap.val() || {});
+    });
+    return () => cancelar();
+  }, []);
 
   const formatarData = (texto) => {
     let apenasNumeros = texto.replace(/\D/g, "");
@@ -66,6 +78,7 @@ export default function Cadastro({ navigation }) {
         nome: usuario,
         data_nascimento: dataNascimento,
         email: email,
+        medico_id: medicoId || null,
       });
 
       await sendEmailVerification(userCredential.user);
@@ -88,6 +101,9 @@ export default function Cadastro({ navigation }) {
       }
     }
   };
+
+  const medicosArray = Object.entries(medicosAprovados);
+  const medicoSelecionado = medicosAprovados[medicoId];
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -123,6 +139,55 @@ export default function Cadastro({ navigation }) {
             maxLength={10}
           />
 
+          <Text style={styles.label}>Médico responsável:</Text>
+          {medicosArray.length === 0 ? (
+            <Text style={styles.textoSemMedico}>
+              Nenhum médico disponível ainda
+            </Text>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() => setMostrarMedicos(!mostrarMedicos)}
+              >
+                <Text style={medicoSelecionado ? styles.textoInput : styles.textoPlaceholder}>
+                  {medicoSelecionado
+                    ? `${medicoSelecionado.nome} — CRM ${medicoSelecionado.crm}/${medicoSelecionado.uf}`
+                    : "Selecione um médico"}
+                </Text>
+              </TouchableOpacity>
+
+              {mostrarMedicos && (
+                <View style={styles.listaMedicos}>
+                  <TouchableOpacity
+                    style={styles.opcaoMedico}
+                    onPress={() => {
+                      setMedicoId("");
+                      setMostrarMedicos(false);
+                    }}
+                  >
+                    <Text style={styles.textoOpcao}>Nenhum médico</Text>
+                  </TouchableOpacity>
+
+                  {medicosArray.map(([uid, dados]) => (
+                    <TouchableOpacity
+                      key={uid}
+                      style={styles.opcaoMedico}
+                      onPress={() => {
+                        setMedicoId(uid);
+                        setMostrarMedicos(false);
+                      }}
+                    >
+                      <Text style={styles.textoOpcao}>
+                        {dados.nome} — CRM {dados.crm}/{dados.uf}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+
           <Text style={styles.label}>Email:</Text>
           <TextInput
             style={styles.input}
@@ -150,7 +215,6 @@ export default function Cadastro({ navigation }) {
             onChangeText={setConfirmarSenha}
           />
 
-          {/* Checkbox simples, sem dependência externa */}
           <View style={styles.checkboxContainer}>
             <TouchableOpacity
               onPress={() => setConcordaTermos(!concordaTermos)}
@@ -161,11 +225,8 @@ export default function Cadastro({ navigation }) {
             </Text>
           </View>
 
-          <TouchableOpacity 
-          style={styles.button} 
-          onPress={handleCadastro}
-          >
-          <Text style={styles.buttonText}>Cadastrar</Text>
+          <TouchableOpacity style={styles.button} onPress={handleCadastro}>
+            <Text style={styles.buttonText}>Cadastrar</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -183,7 +244,6 @@ const styles = StyleSheet.create({
     backgroundColor: FUNDO,
     alignItems: "center",
   },
-
   topContainer: {
     backgroundColor: FUNDO,
     width: "100%",
@@ -204,13 +264,12 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   title: {
-    color: "#000000", 
+    color: "#000000",
     fontSize: 24,
     fontWeight: "bold",
     zIndex: 10,
     marginLeft: 60,
   },
-
   formContainer: {
     flex: 1,
     backgroundColor: FUNDO,
@@ -233,6 +292,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 15,
     fontSize: 14,
+    color: "#000",
+    justifyContent: "center",
+    minHeight: 45,
+  },
+  textoInput: {
+    fontSize: 14,
+    color: "#000",
+  },
+  textoPlaceholder: {
+    fontSize: 14,
+    color: "#999",
+  },
+  textoSemMedico: {
+    fontSize: 13,
+    color: "#999",
+    marginBottom: 15,
+    fontStyle: "italic",
+  },
+  listaMedicos: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    marginBottom: 15,
+    maxHeight: 150,
+  },
+  opcaoMedico: {
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  textoOpcao: {
+    fontSize: 13,
     color: "#000",
   },
   checkboxContainer: {
